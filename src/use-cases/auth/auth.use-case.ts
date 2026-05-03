@@ -11,7 +11,9 @@ export class AuthUseCase {
   constructor(private readonly dataServices: IDataServices) {}
 
   async login(dto: LoginDto): Promise<{ token: string; user: IJwtPayload }> {
+    console.log(`[AUTH] login attempt: ${dto.email}`);
     const user = await this.dataServices.users.findOne({ email: dto.email });
+    console.log(`[AUTH] user found: ${!!user}`);
 
     // Same 401 message for "no such user" and "wrong password" — prevents user enumeration
     if (!user) throw new AppError('Invalid email or password.', 401);

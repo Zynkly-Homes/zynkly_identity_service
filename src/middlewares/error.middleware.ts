@@ -26,14 +26,13 @@ export const errorMiddleware = (
   _next: NextFunction,
 ): void => {
 
-  // ── Always log to terminal ─────────────────────────────────────────────
-  // This is what you see in the nodemon console
+  // ── Always log full details to terminal (Render logs / nodemon console) ──
   console.error(`\n[ERROR] ${req.method} ${req.originalUrl}`);
   console.error(`  Status : ${(err as AppError).statusCode ?? 500}`);
   console.error(`  Message: ${err.message}`);
-  if (process.env['NODE_ENV'] !== 'production') {
-    console.error(`  Stack  : ${err.stack ?? 'no stack'}`);
-  }
+  console.error(`  Stack  : ${err.stack ?? 'no stack'}`);
+  if (err.code)     console.error(`  Code   : ${err.code}`);
+  if (err.keyValue) console.error(`  Key    : ${JSON.stringify(err.keyValue)}`);
 
   // ── 1. Our own AppError (business logic errors with known status codes) ─
   if (err instanceof AppError) {
