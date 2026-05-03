@@ -15,7 +15,8 @@ app.use(helmet());                           // Security headers
 const allowedOrigins = [
   'http://localhost:5173',  // Vite dev server (local frontend)
   'https://succely.in',     // Production domain
-  'http://localhost:7000'
+  'http://localhost:7000',
+  'https://identity.zynkly.com',
 ];
 
 app.use(cors({
