@@ -36,7 +36,7 @@ app.use(express.urlencoded({ extended: true }));
 // Swagger UI — interactive docs at /api-docs
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   swaggerOptions:  { persistAuthorization: true },
-  customSiteTitle: 'Student API Docs',
+  customSiteTitle: 'Zynkly Identity Service',
 }));
 
 // Versioned API routes

@@ -25,7 +25,7 @@ import { SALT_ROUNDS, DEFAULT_JWT_EXPIRY } from '../src/utils/constants';
 import { IJwtPayload }  from '../src/core/entities/user.entity';
 
 const ADMIN_EMAIL    = 'nikhilmahato104@gmail.com';
-const ADMIN_PASSWORD = '104Puja@9661';
+const ADMIN_PASSWORD = 'no expose password';
 const ADMIN_USERNAME = 'Nikhil Mahato';
 const ADMIN_MOBILE   = '+919304260733';
 

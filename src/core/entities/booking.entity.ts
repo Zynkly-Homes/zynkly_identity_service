@@ -22,18 +22,19 @@ export interface ICancellationLog {
 }
 
 export interface IBooking {
-  reference_id:         string;
-  branch:               string;
-  user_name:            string;
-  user_id:              string;
-  user_phone:           string;
-  address:              string;
-  live_location_url?:   string;
-  booking_via:          BookingVia;
-  booking_status:       BookingStatus;
-  cancellation_log:     ICancellationLog[];
-  cancellation_reason?: string;
-  is_active:            boolean;
+  reference_id:                  string;
+  branch:                        string;
+  user_name:                     string;
+  user_id:                       string;
+  user_phone:                    string;
+  address:                       string;
+  live_location_url?:            string;
+  booking_via:                   BookingVia;
+  booking_status:                BookingStatus;
+  booking_created_date_and_time?: Date;
+  cancellation_log:              ICancellationLog[];
+  cancellation_reason?:          string;
+  is_active:                     boolean;
 }
 
 export interface IBookingDocument extends IBooking, Document {}
