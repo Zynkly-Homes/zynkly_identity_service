@@ -28,7 +28,8 @@ app.use(cors({
   },
   credentials: true,   // Allow cookies / Authorization headers cross-origin
   methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Api-Key', 'X-Requested-With', 'Accept'],
+  
 }));
 app.use(morgan('dev'));                      // Request logging
 app.use(express.json());                     // Parse JSON body
