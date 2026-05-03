@@ -1,45 +1,68 @@
 import { Request, Response, NextFunction } from 'express';
-import { sendError } from '../utils/response.util';
+import { sendError }  from '../utils/response.util';
+import { AppError }   from '../utils/app-error.util';
 
 interface MongoError extends Error {
-  code?: number;
+  code?:     number;
   keyValue?: Record<string, unknown>;
-  kind?: string;
+  kind?:     string;
 }
 
 /**
- * Global error middleware — must have 4 parameters.
- * Express identifies it as error-handling middleware by the (err, req, res, next) signature.
- * All errors forwarded via next(err) or thrown in asyncHandler land here.
+ * Global error middleware — must have exactly 4 parameters.
+ * Express identifies it as an error handler by the (err, req, res, next) signature.
+ *
+ * Error priority (first match wins):
+ *  1. AppError        — our own operational errors with a status code attached
+ *  2. Mongoose ValidationError — schema-level required/type failures
+ *  3. MongoDB 11000   — duplicate unique index violation
+ *  4. Mongoose CastError — invalid ObjectId in route params
+ *  5. Everything else — unexpected 500 (programming bugs, network failures)
  */
-export const errorMiddleware = (err: MongoError, req: Request, res: Response, _next: NextFunction): void => {
-  console.error(`[ERROR] ${req.method} ${req.originalUrl} — ${err.message}`);
+export const errorMiddleware = (
+  err:  MongoError,
+  req:  Request,
+  res:  Response,
+  _next: NextFunction,
+): void => {
 
-  // Mongoose schema validation (missing required fields, type mismatch)
-  if (err.name === 'ValidationError') {
-    const messages = Object.values((err as unknown as { errors: Record<string, { message: string }> }).errors)
-      .map(e => e.message);
-    return sendError(res, 'Validation failed', 400, messages);
+  // ── Always log to terminal ─────────────────────────────────────────────
+  // This is what you see in the nodemon console
+  console.error(`\n[ERROR] ${req.method} ${req.originalUrl}`);
+  console.error(`  Status : ${(err as AppError).statusCode ?? 500}`);
+  console.error(`  Message: ${err.message}`);
+  if (process.env['NODE_ENV'] !== 'production') {
+    console.error(`  Stack  : ${err.stack ?? 'no stack'}`);
   }
 
-  // MongoDB duplicate key — error code 11000 is the standard MongoDB duplicate index violation code
+  // ── 1. Our own AppError (business logic errors with known status codes) ─
+  if (err instanceof AppError) {
+    sendError(res, err.message, err.statusCode);
+    return;
+  }
+
+  // ── 2. Mongoose schema validation (missing required fields, type errors) ─
+  if (err.name === 'ValidationError') {
+    const messages = Object.values(
+      (err as unknown as { errors: Record<string, { message: string }> }).errors
+    ).map(e => e.message);
+    sendError(res, 'Validation failed', 400, messages);
+    return;
+  }
+
+  // ── 3. MongoDB duplicate key (code 11000) ──────────────────────────────
   if (err.code === 11000) {
     const field = Object.keys(err.keyValue ?? {})[0] ?? 'field';
-    return sendError(res, `Duplicate value: '${field}' already exists`, 409);
+    sendError(res, `Duplicate value: '${field}' already exists`, 409);
+    return;
   }
 
-  // Mongoose CastError — invalid ObjectId in route params (e.g. /students/not-an-id)
+  // ── 4. Mongoose CastError — invalid ObjectId in :id param ─────────────
   if (err.name === 'CastError' && err.kind === 'ObjectId') {
-    return sendError(res, 'Invalid ID format — must be a valid MongoDB ObjectId', 400);
+    sendError(res, 'Invalid ID format — must be a valid MongoDB ObjectId', 400);
+    return;
   }
 
-  // Named business logic errors thrown in use-cases
-  const notFoundErrors = ['Student not found', 'Marks not found', 'Marks not found for this student'];
-  if (notFoundErrors.includes(err.message)) return sendError(res, err.message, 404);
-
-  if (err.message.includes('already exists') || err.message.includes('already taken')) {
-    return sendError(res, err.message, 409);
-  }
-
+  // ── 5. Unexpected error — do not leak internals to the client ──────────
   sendError(res, 'Internal server error', 500);
 };

@@ -1,4 +1,5 @@
 import { Types }           from 'mongoose';
+import { AppError }        from '../../utils/app-error.util';
 import { IDataServices }   from '../../core/abstracts/data-service.abstract';
 import { CreateMarksDto }  from '../../core/dtos/marks/create-marks.dto';
 import { UpdateMarksDto }  from '../../core/dtos/marks/update-marks.dto';
@@ -160,7 +161,7 @@ export class MarksUseCase {
       _id: new Types.ObjectId(id),
     });
     const result = await this.dataServices.marks.aggregate(pipeline);
-    if (!result.length) throw new Error('Marks not found');
+    if (!result.length) throw new AppError('Marks not found', 404);
     return result[0];
   }
 
@@ -170,17 +171,17 @@ export class MarksUseCase {
       student_id: new Types.ObjectId(studentId),
     });
     const result = await this.dataServices.marks.aggregate(pipeline);
-    if (!result.length) throw new Error('Marks not found for this student');
+    if (!result.length) throw new AppError('Marks not found for this student', 404);
     return result[0];
   }
 
   /** Create marks — validate student exists + no duplicate, then compute and save */
   async createMarks(dto: CreateMarksDto) {
     const student = await this.dataServices.students.get(dto.student_id);
-    if (!student) throw new Error('Student not found');
+    if (!student) throw new AppError('Student not found', 404);
 
     const alreadyExists = await this.dataServices.marks.findUnique({ student_id: dto.student_id });
-    if (alreadyExists) throw new Error('Marks already exist for this student');
+    if (alreadyExists) throw new AppError('Marks already exist for this student', 409);
 
     const computed = this.computeResult(dto);
     return this.dataServices.marks.create({
@@ -196,7 +197,7 @@ export class MarksUseCase {
    */
   async updateMarks(id: string, dto: UpdateMarksDto) {
     const existing = await this.dataServices.marks.get(id) as Record<string, unknown> | null;
-    if (!existing) throw new Error('Marks not found');
+    if (!existing) throw new AppError('Marks not found', 404);
 
     // Merge — keep old values for subjects not in the update dto
     const merged = {
@@ -213,7 +214,7 @@ export class MarksUseCase {
 
   async deleteMarks(id: string) {
     const marks = await this.dataServices.marks.get(id);
-    if (!marks) throw new Error('Marks not found');
+    if (!marks) throw new AppError('Marks not found', 404);
     return this.dataServices.marks.delete(id);
   }
 }

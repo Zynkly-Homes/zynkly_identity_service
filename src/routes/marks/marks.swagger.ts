@@ -9,6 +9,7 @@ export const marksPaths = {
     get: {
       tags:    ['Marks'],
       summary: 'Get all marks with student info ($lookup join with students collection)',
+      security: [{ bearerAuth: [], apiKeyAuth: [] }],
       parameters: [
         { in: 'query', name: 'page',       schema: { type: 'integer' }, description: 'Page number' },
         { in: 'query', name: 'limit',      schema: { type: 'integer' }, description: 'Items per page' },
@@ -21,6 +22,7 @@ export const marksPaths = {
     post: {
       tags:    ['Marks'],
       summary: 'Create marks for a student',
+      security: [{ bearerAuth: [], apiKeyAuth: [] }],
       requestBody: {
         required: true,
         content:  { 'application/json': { schema: { $ref: '#/components/schemas/CreateMarksDto' } } },

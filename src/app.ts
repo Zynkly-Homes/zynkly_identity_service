@@ -10,7 +10,25 @@ import { errorMiddleware }  from './middlewares';
 const app = express();
 
 app.use(helmet());                           // Security headers
-app.use(cors());                             // Cross-origin
+
+// Allowed origins — add new domains here as needed
+const allowedOrigins = [
+  'http://localhost:5173',  // Vite dev server (local frontend)
+  'https://succely.in',     // Production domain
+  'http://localhost:7000'
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (Postman, server-to-server, curl)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error(`CORS: origin '${origin}' is not allowed`));
+  },
+  credentials: true,   // Allow cookies / Authorization headers cross-origin
+  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use(morgan('dev'));                      // Request logging
 app.use(express.json());                     // Parse JSON body
 app.use(express.urlencoded({ extended: true }));

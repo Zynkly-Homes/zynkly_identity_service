@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { authMiddleware, apiKeyMiddleware } from '../../middlewares';
 import {
   getAllStudents,
   getGradeSummary,
@@ -10,11 +11,13 @@ import {
 
 const router = Router();
 
-router.get('/',                getAllStudents);
-router.get('/summary/grades',  getGradeSummary);  // Must be before /:id
-router.get('/:id',             getStudentById);
-router.post('/',               createStudent);
-router.patch('/:id',           updateStudent);
-router.delete('/:id',          deleteStudent);
+router.use(authMiddleware, apiKeyMiddleware);
+
+router.get('/',               getAllStudents);
+router.get('/summary/grades', getGradeSummary);  // Must be before /:id
+router.get('/:id',            getStudentById);
+router.post('/',              createStudent);
+router.patch('/:id',          updateStudent);
+router.delete('/:id',         deleteStudent);
 
 export default router;

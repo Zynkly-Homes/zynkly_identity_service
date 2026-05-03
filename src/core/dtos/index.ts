@@ -1,2 +1,7 @@
 export * from './student';
 export * from './marks';
+export * from './module';
+export * from './role';
+export * from './user';
+export * from './api-key';
+export * from './booking';

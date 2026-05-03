@@ -1,20 +1,18 @@
 import { IGenericRepository } from './generic-repository.abstract';
 import { IStudentDocument }   from '../entities/student.entity';
 import { IMarksDocument }     from '../entities/marks.entity';
+import { IModuleDocument }    from '../entities/module.entity';
+import { IRoleDocument }      from '../entities/role.entity';
+import { IUserDocument }      from '../entities/user.entity';
+import { IApiKeyDocument }    from '../entities/api-key.entity';
+import { IBookingDocument }   from '../entities/booking.entity';
 
-/**
- * IDataServices — Single entry point to all database repositories.
- *
- * WHY: Instead of injecting N separate repos into every use-case,
- * inject one IDataServices that exposes them all as typed properties.
- * Adding a new collection = adding one property here + wiring it in MongoDataServices.
- */
 export interface IDataServices {
   students: IGenericRepository<IStudentDocument>;
   marks:    IGenericRepository<IMarksDocument>;
-
-  // Scale up by adding repos here:
-  // courses:     IGenericRepository<ICourseDocument>;
-  // teachers:    IGenericRepository<ITeacherDocument>;
-  // enrollments: IGenericRepository<IEnrollmentDocument>;
+  modules:  IGenericRepository<IModuleDocument>;
+  roles:    IGenericRepository<IRoleDocument>;
+  users:    IGenericRepository<IUserDocument>;
+  apiKeys:  IGenericRepository<IApiKeyDocument>;
+  bookings: IGenericRepository<IBookingDocument>;
 }

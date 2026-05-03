@@ -1,3 +1,4 @@
+import { AppError }        from '../../utils/app-error.util';
 import { IDataServices }    from '../../core/abstracts/data-service.abstract';
 import { CreateStudentDto } from '../../core/dtos/student/create-student.dto';
 import { UpdateStudentDto } from '../../core/dtos/student/update-student.dto';
@@ -43,36 +44,36 @@ export class StudentUseCase {
 
   async getStudentById(id: string) {
     const student = await this.dataServices.students.get(id);
-    if (!student) throw new Error('Student not found');
+    if (!student) throw new AppError('Student not found', 404);
     return student;
   }
 
   async createStudent(dto: CreateStudentDto) {
     const existing = await this.dataServices.students.findUnique({ email: dto.email });
-    if (existing) throw new Error('A student with this email already exists');
+    if (existing) throw new AppError('A student with this email already exists', 409);
     return this.dataServices.students.create(dto);
   }
 
   async updateStudent(id: string, dto: UpdateStudentDto) {
     const student = await this.dataServices.students.get(id) as ({ email: string } | null);
-    if (!student) throw new Error('Student not found');
+    if (!student) throw new AppError('Student not found', 404);
 
     if (dto.email && dto.email !== student.email) {
       const taken = await this.dataServices.students.findUnique({ email: dto.email });
-      if (taken) throw new Error('Email is already taken by another student');
+      if (taken) throw new AppError('Email is already taken by another student', 409);
     }
     return this.dataServices.students.update(id, dto);
   }
 
   async deleteStudent(id: string) {
     const student = await this.dataServices.students.get(id);
-    if (!student) throw new Error('Student not found');
+    if (!student) throw new AppError('Student not found', 404);
     return this.dataServices.students.delete(id);
   }
 
   async deactivateStudent(id: string) {
     const student = await this.dataServices.students.get(id);
-    if (!student) throw new Error('Student not found');
+    if (!student) throw new AppError('Student not found', 404);
     return this.dataServices.students.update(id, { is_active: false });
   }
 

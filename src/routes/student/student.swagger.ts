@@ -13,6 +13,7 @@ export const studentPaths = {
     get: {
       tags:    ['Students'],
       summary: 'Get all students with optional filtering and pagination',
+      security: [{ bearerAuth: [], apiKeyAuth: [] }],
       parameters: [
         { in: 'query', name: 'page',      schema: { type: 'integer', example: 1 },         description: 'Page number' },
         { in: 'query', name: 'limit',     schema: { type: 'integer', example: 10 },        description: 'Items per page' },
@@ -27,6 +28,7 @@ export const studentPaths = {
     post: {
       tags:    ['Students'],
       summary: 'Create a new student',
+      security: [{ bearerAuth: [], apiKeyAuth: [] }],
       requestBody: {
         required: true,
         content:  { 'application/json': { schema: { $ref: '#/components/schemas/CreateStudentDto' } } },
@@ -43,6 +45,7 @@ export const studentPaths = {
     get: {
       tags:    ['Students'],
       summary: 'Grade summary — count & average age per grade (MongoDB $group aggregation)',
+      security: [{ bearerAuth: [], apiKeyAuth: [] }],
       responses: {
         200: {
           description: 'Grade summary',

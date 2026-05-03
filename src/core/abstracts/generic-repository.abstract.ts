@@ -18,4 +18,5 @@ export interface IGenericRepository<T> {
   delete(id: string, session?: unknown): Promise<T | null>;
   findUnique(data: object, session?: unknown): Promise<T | null>;
   aggregate(pipeline: object[]): Promise<unknown[]>;
+  aggregateWithPagination(pipeline: object[], page?: number, limit?: number): Promise<{ data: unknown[]; total: number; page: number; limit: number; totalPages: number }>;
 }

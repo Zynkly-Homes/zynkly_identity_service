@@ -1,14 +1,22 @@
 import { Router }     from 'express';
 import studentRoutes  from './student';
 import marksRoutes    from './marks';
+import moduleRoutes   from './module';
+import roleRoutes     from './role';
+import userRoutes     from './user';
+import authRoutes     from './auth';
+import apiKeyRoutes   from './api-key';
+import bookingRoutes  from './booking/booking.routes';
 
 const router = Router();
 
-router.use('/students', studentRoutes);
-router.use('/marks',    marksRoutes);
-
-// Add new resources here as the project grows:
-// import courseRoutes  from './course';
-// router.use('/courses',  courseRoutes);
+router.use('/students',  studentRoutes);
+router.use('/marks',     marksRoutes);
+router.use('/modules',   moduleRoutes);
+router.use('/roles',     roleRoutes);
+router.use('/users',     userRoutes);
+router.use('/auth',      authRoutes);
+router.use('/api-keys',  apiKeyRoutes);
+router.use('/bookings',  bookingRoutes);
 
 export default router;
