@@ -25,7 +25,7 @@ export const swaggerSpec = {
     ].join('\n'),
   },
   servers: [
-    { url: 'https://api.succesly.in/api/v1', description: 'Production server' },
+    { url: 'https://identity.zynkly.com/api/v1', description: 'Production server' },
     { url: 'http://localhost:7000/api/v1',        description: 'Development server' },
   ],
   tags: [

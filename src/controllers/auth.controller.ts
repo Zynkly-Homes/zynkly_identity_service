@@ -20,7 +20,7 @@ const authUseCase  = new AuthUseCase(dataServices);
  *   - We detect HTTPS via req.secure (Express reads X-Forwarded-Proto after
  *     `app.set('trust proxy', 1)` is set in app.ts).
  *   - SameSite=None is required for cross-origin requests (e.g. localhost:5173
- *     dev frontend → api.succesly.in prod API). SameSite=None MUST pair with
+ *     dev frontend → identity.zynkly.com prod API). SameSite=None MUST pair with
  *     Secure=true — the browser rejects it otherwise.
  *   - SameSite=Lax is safe enough for plain-HTTP local dev (no cross-site POST).
  */

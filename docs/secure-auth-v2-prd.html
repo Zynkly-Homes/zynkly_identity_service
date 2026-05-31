@@ -203,7 +203,7 @@
     <strong>Version:</strong> 2.1 &nbsp;|&nbsp; <strong>Date:</strong> May 2026<br/>
     <strong>Branch:</strong> nikhil-dev-secure-csrf-branch<br/>
     <strong>Status:</strong> <span style="color:#27ae60;font-weight:700;">Active · Shipped · Production-Ready</span><br/>
-    <strong>API Base:</strong> https://api.succesly.in/api/v1
+    <strong>API Base:</strong> https://identity.zynkly.com/api/v1
   </div>
 </div>
 
@@ -320,7 +320,7 @@
     <tr><td>Prevent cookie forgery</td><td>Dashboard shows no data without real API auth; server validates every token</td><td><span class="badge green">Done</span></td></tr>
     <tr><td>Prevent cookie theft / session hijack</td><td>Refresh token unreadable by JS; instant logout revokes access</td><td><span class="badge green">Done</span></td></tr>
     <tr><td>CSRF protection on all mutations</td><td>All POST/PUT/PATCH/DELETE require x-csrf-token header</td><td><span class="badge green">Done</span></td></tr>
-    <tr><td>Cross-origin cookie delivery</td><td>localhost:5173 dev frontend can login to api.succesly.in without 401</td><td><span class="badge green">Done v2.1</span></td></tr>
+    <tr><td>Cross-origin cookie delivery</td><td>localhost:5173 dev frontend can login to identity.zynkly.com without 401</td><td><span class="badge green">Done v2.1</span></td></tr>
     <tr><td>Instant logout across all sessions</td><td>Logout sets is_valid=false in DB; old access token rejected within milliseconds</td><td><span class="badge green">Done</span></td></tr>
     <tr><td>Silent token refresh</td><td>User never sees a logout screen during normal usage; refresh is automatic</td><td><span class="badge blue">Frontend task</span></td></tr>
   </table>
@@ -348,7 +348,7 @@
     <tr><td>CSRF token comparison</td><td>crypto.timingSafeEqual to prevent timing attacks</td></tr>
     <tr><td>Session cleanup</td><td>MongoDB TTL index auto-deletes sessions after expires_at</td></tr>
     <tr><td>Cookie security</td><td>HttpOnly, SameSite=None+Secure on HTTPS, path-scoped to /api/v1/auth</td></tr>
-    <tr><td>CORS</td><td>Whitelist only — localhost:5173, localhost:3000, succesly.in, identity.zynkly.com, api.succesly.in</td></tr>
+    <tr><td>CORS</td><td>Whitelist only — localhost:5173, localhost:3000, succesly.in, identity.zynkly.com, identity.zynkly.com</td></tr>
   </table>
   <div class="page-footer">Made by Nikhil Mahato · Secure Auth v2.1 · May 2026</div>
 </div>
@@ -435,8 +435,8 @@
     <span class="hi">4. v2.1 mein Kya Fix Kiya aur Kyun <span class="new-badge">NAYA</span></span>
   </h1>
 
-  <p class="en">After deploying v2.0, the frontend dev reported that <code>/auth/refresh</code> returned 401 "Refresh token is required" when called from <code>localhost:5173</code> to <code>api.succesly.in</code>. Three bugs were found and fixed.</p>
-  <p class="hi">v2.0 deploy karne ke baad, frontend se report aaya ki <code>/auth/refresh</code> pe 401 aa raha hai jab <code>localhost:5173</code> se <code>api.succesly.in</code> ko call karte hain. Teen bugs mile aur fix kiye.</p>
+  <p class="en">After deploying v2.0, the frontend dev reported that <code>/auth/refresh</code> returned 401 "Refresh token is required" when called from <code>localhost:5173</code> to <code>identity.zynkly.com</code>. Three bugs were found and fixed.</p>
+  <p class="hi">v2.0 deploy karne ke baad, frontend se report aaya ki <code>/auth/refresh</code> pe 401 aa raha hai jab <code>localhost:5173</code> se <code>identity.zynkly.com</code> ko call karte hain. Teen bugs mile aur fix kiye.</p>
 
   <h2>Bug 1 — SameSite=None Requires Secure=true</h2>
   <div class="vuln-card">
@@ -458,8 +458,8 @@
     path:     <span class="string">'/api/v1/auth'</span>,                 <span class="comment">// scope to auth routes only</span>
   };
 }</pre>
-    <p class="en"><strong>Why SameSite=None?</strong> The frontend (localhost:5173 or succesly.in) is a <em>different origin</em> from the API (api.succesly.in). Browsers block cookies on cross-origin requests unless <code>SameSite=None; Secure</code> is set. SameSite=None MUST be paired with Secure=true — the browser rejects it otherwise.</p>
-    <p class="hi"><strong>SameSite=None kyun?</strong> Frontend (localhost:5173 ya succesly.in) aur API (api.succesly.in) alag origins hain. Cross-origin requests pe browser cookies block karta hai jab tak <code>SameSite=None; Secure</code> na ho.</p>
+    <p class="en"><strong>Why SameSite=None?</strong> The frontend (localhost:5173 or succesly.in) is a <em>different origin</em> from the API (identity.zynkly.com). Browsers block cookies on cross-origin requests unless <code>SameSite=None; Secure</code> is set. SameSite=None MUST be paired with Secure=true — the browser rejects it otherwise.</p>
+    <p class="hi"><strong>SameSite=None kyun?</strong> Frontend (localhost:5173 ya succesly.in) aur API (identity.zynkly.com) alag origins hain. Cross-origin requests pe browser cookies block karta hai jab tak <code>SameSite=None; Secure</code> na ho.</p>
   </div>
 
   <h2>Bug 2 — Express Didn't Know the Request Was HTTPS</h2>
@@ -797,7 +797,7 @@ router.<span class="fn">post</span>(<span class="string">'/'</span>, <span class
 <span class="keyword">import</span> axios <span class="keyword">from</span> <span class="string">'axios'</span>;
 <span class="keyword">import</span> { useAuthStore } <span class="keyword">from</span> <span class="string">'../store/authStore'</span>;
 
-<span class="keyword">const</span> BASE_URL = <span class="string">'https://api.succesly.in/api/v1'</span>;
+<span class="keyword">const</span> BASE_URL = <span class="string">'https://identity.zynkly.com/api/v1'</span>;
 
 <span class="keyword">export const</span> apiClient = axios.<span class="fn">create</span>({
   baseURL:         BASE_URL,
@@ -857,7 +857,7 @@ apiClient.interceptors.response.<span class="fn">use</span>(
 );</pre>
   <div class="callout warn">
     <div class="callout-title">Why withCredentials: true?</div>
-    <p class="en">Without this, the browser won't send the <code>rt</code> cookie on cross-origin requests to api.succesly.in. This MUST be set on the axios instance. The backend's CORS also has <code>credentials: true</code> to match.</p>
+    <p class="en">Without this, the browser won't send the <code>rt</code> cookie on cross-origin requests to identity.zynkly.com. This MUST be set on the axios instance. The backend's CORS also has <code>credentials: true</code> to match.</p>
     <p class="hi">Iske bina browser <code>rt</code> cookie cross-origin requests pe send nahi karega. Ye axios instance pe MUST set hona chahiye. Backend ka CORS bhi <code>credentials: true</code> set hai.</p>
   </div>
   <div class="page-footer">Made by Nikhil Mahato · Secure Auth v2.1 · May 2026</div>
@@ -977,7 +977,7 @@ apiClient.interceptors.response.<span class="fn">use</span>(
 
   <h2>Quick Checklist — Before Shipping Frontend</h2>
   <ul class="checklist">
-    <li>Axios instance has <code>withCredentials: true</code> and <code>baseURL = 'https://api.succesly.in/api/v1'</code></li>
+    <li>Axios instance has <code>withCredentials: true</code> and <code>baseURL = 'https://identity.zynkly.com/api/v1'</code></li>
     <li>Request interceptor attaches <code>Authorization: Bearer &lt;accessToken&gt;</code> to every request</li>
     <li>Request interceptor attaches <code>x-csrf-token: &lt;csrfToken&gt;</code> to POST/PUT/PATCH/DELETE</li>
     <li>Response interceptor handles 401 → calls /auth/refresh → retries failed request</li>
@@ -986,7 +986,7 @@ apiClient.interceptors.response.<span class="fn">use</span>(
     <li>Login stores <code>{ accessToken, csrfToken, user }</code> in Zustand, navigates to dashboard</li>
     <li>Logout calls <code>/auth/logout</code> API, then clears Zustand state, then redirects to /login</li>
     <li>No tokens stored in localStorage, sessionStorage, or readable cookies</li>
-    <li>Tested on localhost:5173 → api.succesly.in (cross-origin): login sets rt cookie, refresh sends rt cookie</li>
+    <li>Tested on localhost:5173 → identity.zynkly.com (cross-origin): login sets rt cookie, refresh sends rt cookie</li>
   </ul>
   <div class="page-footer">Made by Nikhil Mahato · Secure Auth v2.1 · May 2026</div>
 </div>
@@ -1153,7 +1153,7 @@ apiClient.interceptors.response.<span class="fn">use</span>(
   <p class="hi">Ye prompt kisi bhi AI assistant ko do — Claude, ChatGPT, etc. — frontend integration implement karne mein help milegi.</p>
 
   <pre style="font-size:11px;white-space:pre-wrap;">I am building the frontend for a React + TypeScript + Vite app that connects to
-a REST API at https://api.succesly.in/api/v1.
+a REST API at https://identity.zynkly.com/api/v1.
 
 The backend uses a secure auth system with the following design:
 
@@ -1202,10 +1202,10 @@ Tech stack: React 18, TypeScript, Zustand, Axios, React Router v6, Vite.</pre>
   <div class="callout tip">
     <div class="callout-title">Additional Instructions for Frontend Dev</div>
     <ul>
-      <li class="en">Test cross-origin: your localhost:5173 calling api.succesly.in. The rt cookie <strong>will</strong> be sent if <code>withCredentials: true</code> is set. If the browser shows a CORS error, check that your origin is in the backend's allowed list.</li>
-      <li class="hi">Cross-origin test karo: localhost:5173 se api.succesly.in. rt cookie <strong>bhejega</strong> agar <code>withCredentials: true</code> set hai. CORS error aaye toh backend whitelist mein origin add karwao.</li>
-      <li class="en">The Swagger docs are at <code>https://api.succesly.in/api-docs</code>. Login there first, then /auth/refresh works automatically in Swagger (withCredentials is enabled).</li>
-      <li class="hi">Swagger docs: <code>https://api.succesly.in/api-docs</code>. Pehle wahan login karo, phir /auth/refresh khud kaam karta hai.</li>
+      <li class="en">Test cross-origin: your localhost:5173 calling identity.zynkly.com. The rt cookie <strong>will</strong> be sent if <code>withCredentials: true</code> is set. If the browser shows a CORS error, check that your origin is in the backend's allowed list.</li>
+      <li class="hi">Cross-origin test karo: localhost:5173 se identity.zynkly.com. rt cookie <strong>bhejega</strong> agar <code>withCredentials: true</code> set hai. CORS error aaye toh backend whitelist mein origin add karwao.</li>
+      <li class="en">The Swagger docs are at <code>https://identity.zynkly.com/api-docs</code>. Login there first, then /auth/refresh works automatically in Swagger (withCredentials is enabled).</li>
+      <li class="hi">Swagger docs: <code>https://identity.zynkly.com/api-docs</code>. Pehle wahan login karo, phir /auth/refresh khud kaam karta hai.</li>
       <li class="en">If you get a 403 on a mutation (POST/PUT/PATCH/DELETE), it means the x-csrf-token header is missing or wrong. Check your request interceptor is attaching it.</li>
       <li class="hi">Mutation pe 403 aaye toh x-csrf-token header missing ya galat hai. Request interceptor check karo.</li>
       <li class="en">If /auth/refresh returns 401 on your local machine, the rt cookie is not being sent. Check: (1) withCredentials:true set, (2) you called /auth/login first, (3) check Application → Cookies in Chrome DevTools to see if the rt cookie is there.</li>

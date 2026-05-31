@@ -26,7 +26,7 @@ const allowedOrigins = [
   'http://localhost:3000',          // Alternative dev port
   'https://succesly.in',            // Production domain
   'https://identity.zynkly.com',   // Identity service
-  'https://api.succesly.in',      // Admin dashboard
+  'https://identity.zynkly.com',      // Admin dashboard
   'https://administration.succesly.in', // Admin dashboard alternate domain
   'https://administrative.zynkly.com/',
 ];
