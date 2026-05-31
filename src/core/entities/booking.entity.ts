@@ -15,6 +15,17 @@ export enum BookingStatus {
   CANCELLED_BY_ADMIN   = 'cancelled_by_admin_crm',
 }
 
+export enum PaymentMethod {
+  CASH   = 'cash',
+  ONLINE = 'online',
+}
+
+export enum PaymentStatus {
+  PAID      = 'paid',
+  PENDING   = 'pending',
+  CANCELLED = 'cancelled',
+}
+
 export interface ICancellationLog {
   booking_status: string;
   cancelled_by:   string;
@@ -34,6 +45,10 @@ export interface IBooking {
   booking_created_date_and_time?: Date;
   cancellation_log:              ICancellationLog[];
   cancellation_reason?:          string;
+  package_name:                  string;
+  payment_method:                PaymentMethod;
+  payment_amount:                number;
+  payment_status:                PaymentStatus;
   is_active:                     boolean;
 }
 

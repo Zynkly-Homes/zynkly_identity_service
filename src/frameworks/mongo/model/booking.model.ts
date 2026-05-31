@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import { IBookingDocument, BookingVia, BookingStatus } from '../../../core/entities/booking.entity';
+import { IBookingDocument, BookingVia, BookingStatus, PaymentMethod, PaymentStatus } from '../../../core/entities/booking.entity';
 
 const CancellationLogSchema = new Schema({
   booking_status: { type: String, required: true },
@@ -20,6 +20,10 @@ const BookingSchema = new Schema<IBookingDocument>({
   booking_status:      { type: String, enum: Object.values(BookingStatus), default: BookingStatus.ONGOING },
   cancellation_log:    { type: [CancellationLogSchema], default: [] },
   cancellation_reason: { type: String },
+  package_name:        { type: String, required: true },
+  payment_method:      { type: String, enum: Object.values(PaymentMethod), required: true },
+  payment_amount:      { type: Number, required: true, min: 0 },
+  payment_status:      { type: String, enum: Object.values(PaymentStatus), default: PaymentStatus.PENDING },
   is_active:           { type: Boolean, default: true },
 }, { timestamps: true });
 

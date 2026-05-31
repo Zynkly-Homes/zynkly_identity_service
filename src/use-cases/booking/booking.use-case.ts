@@ -162,7 +162,9 @@ export class BookingUseCase {
     const fieldKeys: (keyof UpdateBookingDto)[] = [
       'branch', 'user_name', 'user_id', 'user_phone',
       'address', 'live_location_url', 'booking_via',
-      'booking_status', 'cancellation_reason', 'is_active',
+      'booking_status', 'cancellation_reason',
+      'package_name', 'payment_method', 'payment_amount', 'payment_status',
+      'is_active',
     ];
     for (const key of fieldKeys) {
       if (dto[key] !== undefined) update[key] = dto[key];

@@ -54,10 +54,9 @@ export function requirePermission(moduleId: string, action: PermissionAction) {
     const roleId = req.user?.role_id;
 
     if (!roleId) {
-      // Defensive guard — should never reach here if authMiddleware ran first
       res.status(403).json({
         success: false,
-        message: 'Forbidden: No role is assigned to this account.',
+        message: 'Access denied: No role is assigned to your account. Please contact an administrator.',
       });
       return;
     }
@@ -69,7 +68,7 @@ export function requirePermission(moduleId: string, action: PermissionAction) {
     if (!role) {
       res.status(403).json({
         success: false,
-        message: 'Forbidden: Your assigned role no longer exists. Please contact the administrator.',
+        message: `Access denied: The role assigned to your account (ID: ${roleId}) no longer exists. Please contact an administrator.`,
       });
       return;
     }
@@ -77,29 +76,36 @@ export function requirePermission(moduleId: string, action: PermissionAction) {
     if (!role.is_active) {
       res.status(403).json({
         success: false,
-        message: 'Forbidden: Your assigned role has been deactivated. Please contact the administrator.',
+        message: `Access denied: Your assigned role "${role.role_name}" has been deactivated. Please contact an administrator to restore access.`,
       });
       return;
     }
 
     // ── Gate 2: Check if this module is in the role's access list ──────────
-    // role_access is an array; find the entry matching the requested module.
     const moduleAccess = role.role_access.find(entry => entry.module_id === moduleId);
 
     if (!moduleAccess) {
       res.status(403).json({
         success: false,
-        message: `Forbidden: You do not have access to the '${moduleId}' module.`,
+        message: `Access denied: Your role "${role.role_name}" (ID: ${roleId}) has no access configured for the "${moduleId}" module. Contact an administrator to request access.`,
       });
       return;
     }
 
     // ── Gate 3: Check if the specific action is permitted ──────────────────
-    // e.g. a "viewer" role may have view: true but create: false
     if (!moduleAccess[action]) {
+      // Build a human-readable summary of what this role CAN do on this module
+      const allActions: PermissionAction[] = ['create', 'edit', 'view', 'delete', 'transfer', 'export'];
+      const grantedActions = allActions.filter(a => moduleAccess[a]);
+      const accessSummary = grantedActions.length > 0
+        ? `Your current permissions for "${moduleId}": [${grantedActions.join(', ')}] only.`
+        : `Your role has no permissions at all for "${moduleId}".`;
+
       res.status(403).json({
         success: false,
-        message: `Forbidden: You do not have '${action}' permission on the '${moduleId}' module.`,
+        message: `Access denied: You are assigned the "${role.role_name}" role (ID: ${roleId}). ` +
+          `The action "${action}" is not permitted on the "${moduleId}" module. ` +
+          `${accessSummary} Please contact an administrator to request elevated permissions.`,
       });
       return;
     }
