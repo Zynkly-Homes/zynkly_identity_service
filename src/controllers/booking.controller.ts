@@ -36,7 +36,7 @@ export const updateBooking = asyncHandler(async (req: Request, res: Response) =>
     req.params['id']!,
     value,
     isAdmin,
-    req.user!.user_id,
+    req.user?.user_id ?? 'api-key',
   );
   sendSuccess(res, 'Booking updated successfully', result);
 });

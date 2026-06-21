@@ -1,8 +1,6 @@
-import { Router }              from 'express';
-import { authMiddleware }      from '../../middlewares/auth.middleware';
-import { csrfMiddleware }      from '../../middlewares/csrf.middleware';
-import { apiKeyMiddleware }    from '../../middlewares/api-key.middleware';
-import { requirePermission }  from '../../middlewares/permission.middleware';
+import { Router }         from 'express';
+import { csrfMiddleware } from '../../middlewares/csrf.middleware';
+import { bookingAuth }    from '../../middlewares/booking-auth.middleware';
 import {
   conditionalBookingCreateApiKey,
   conditionalBookingPatchApiKey,
@@ -17,45 +15,39 @@ import {
 
 const router = Router();
 
-// GET  /bookings        → JWT + permission(view) + API key
+// GET  /bookings        → JWT+permission(view)  OR  API key
 router.get('/',
-  authMiddleware,
-  requirePermission('booking_management', 'view'),
-  apiKeyMiddleware,
+  bookingAuth('booking_management', 'view'),
   getAllBookings,
 );
 
-// GET  /bookings/:id    → JWT + permission(view)
+// GET  /bookings/:id    → JWT+permission(view)  OR  API key
 router.get('/:id',
-  authMiddleware,
-  requirePermission('booking_management', 'view'),
+  bookingAuth('booking_management', 'view'),
   getBookingById,
 );
 
-// POST /bookings        → JWT + CSRF + permission(create) + conditional API key
+// POST /bookings        → JWT+CSRF+permission(create) OR API key; then conditional API key for whatsapp_to_crm
+// csrfMiddleware skips automatically when req.sessionCsrfToken is absent (API-key-only path)
 router.post('/',
-  authMiddleware,
+  bookingAuth('booking_management', 'create'),
   csrfMiddleware,
-  requirePermission('booking_management', 'create'),
   conditionalBookingCreateApiKey,
   createBooking,
 );
 
-// PATCH /bookings/:id   → JWT + CSRF + permission(edit) + conditional API key
+// PATCH /bookings/:id   → JWT+CSRF+permission(edit) OR API key; then conditional API key for operational fields
 router.patch('/:id',
-  authMiddleware,
+  bookingAuth('booking_management', 'edit'),
   csrfMiddleware,
-  requirePermission('booking_management', 'edit'),
   conditionalBookingPatchApiKey,
   updateBooking,
 );
 
-// DELETE /bookings/:id  → JWT + CSRF + permission(delete) + API key
+// DELETE /bookings/:id  → JWT+CSRF+permission(delete)  OR  API key
 router.delete('/:id',
-  authMiddleware,
+  bookingAuth('booking_management', 'delete'),
   csrfMiddleware,
-  requirePermission('booking_management', 'delete'),
-  apiKeyMiddleware,
   deleteBooking,
 );
 

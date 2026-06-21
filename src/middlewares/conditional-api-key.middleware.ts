@@ -10,6 +10,8 @@ import { apiKeyMiddleware } from './api-key.middleware';
 export function conditionalBookingCreateApiKey(
   req: Request, res: Response, next: NextFunction,
 ): Promise<void> | void {
+  // Already validated via API key in bookingAuth — no need to re-check
+  if (req.isApiKeyAuthenticated) return next();
   if (req.body?.booking_via === BookingVia.WHATSAPP_TO_CRM) {
     return apiKeyMiddleware(req, res, next);
   }
@@ -29,6 +31,8 @@ const USER_ONLY_FIELDS = new Set(['booking_status', 'cancellation_reason']);
 export function conditionalBookingPatchApiKey(
   req: Request, res: Response, next: NextFunction,
 ): Promise<void> | void {
+  // Already validated via API key in bookingAuth — no need to re-check
+  if (req.isApiKeyAuthenticated) return next();
   const bodyKeys    = Object.keys(req.body ?? {});
   const needsApiKey = bodyKeys.some(k => !USER_ONLY_FIELDS.has(k));
   if (needsApiKey) {

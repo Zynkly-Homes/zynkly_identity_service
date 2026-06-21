@@ -8,6 +8,7 @@ export interface UpdateBookingDto {
   user_phone?:                    string;
   address?:                       string;
   live_location_url?:             string;
+  house_helper_name?:             string;
   booking_via?:                   BookingVia;
   booking_status?:                BookingStatus;
   booking_created_date_and_time?: Date;
@@ -26,6 +27,7 @@ export const updateBookingSchema = Joi.object<UpdateBookingDto>({
   user_phone:                     Joi.string(),
   address:                        Joi.string(),
   live_location_url:              Joi.string().uri().allow(''),
+  house_helper_name:              Joi.string().allow(''),
   booking_via:                    Joi.string().valid(...Object.values(BookingVia)),
   booking_status:                 Joi.string().valid(...Object.values(BookingStatus)),
   booking_created_date_and_time:  Joi.date().iso(),

@@ -161,7 +161,7 @@ export class BookingUseCase {
     // Copy all allowed fields into the update
     const fieldKeys: (keyof UpdateBookingDto)[] = [
       'branch', 'user_name', 'user_id', 'user_phone',
-      'address', 'live_location_url', 'booking_via',
+      'address', 'live_location_url', 'house_helper_name', 'booking_via',
       'booking_status', 'cancellation_reason',
       'package_name', 'payment_method', 'payment_amount', 'payment_status',
       'is_active',

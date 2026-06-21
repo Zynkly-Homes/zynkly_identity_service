@@ -15,6 +15,7 @@ const BookingSchema = new Schema<IBookingDocument>({
   user_phone:          { type: String, required: true },
   address:             { type: String, required: true },
   live_location_url:            { type: String },
+  house_helper_name:            { type: String },
   booking_via:                  { type: String, enum: Object.values(BookingVia), required: true },
   booking_created_date_and_time: { type: Date },
   booking_status:      { type: String, enum: Object.values(BookingStatus), default: BookingStatus.ONGOING },

@@ -40,6 +40,7 @@ export interface IBooking {
   user_phone:                    string;
   address:                       string;
   live_location_url?:            string;
+  house_helper_name?:            string;
   booking_via:                   BookingVia;
   booking_status:                BookingStatus;
   booking_created_date_and_time?: Date;

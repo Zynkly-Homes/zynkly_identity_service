@@ -1,12 +1,14 @@
 const jwtOnly   = [{ bearerAuth: [] }];
 const jwtAndKey = [{ bearerAuth: [], apiKeyAuth: [] }];
+// JWT-or-API-key: either credential alone is sufficient
+const jwtOrKey  = [{ bearerAuth: [] }, { apiKeyAuth: [] }];
 
 export const bookingPaths = {
   '/bookings': {
     get: {
       tags: ['Bookings'],
-      summary: 'Get all bookings — search, filter and pagination (JWT + API key)',
-      security: jwtAndKey,
+      summary: 'Get all bookings — search, filter and pagination (JWT or API key)',
+      security: jwtOrKey,
       parameters: [
         { in: 'query', name: 'page',           schema: { type: 'integer', example: 1 },                       description: 'Page number' },
         { in: 'query', name: 'limit',          schema: { type: 'integer', example: 10 },                      description: 'Items per page' },
@@ -25,15 +27,16 @@ export const bookingPaths = {
     },
     post: {
       tags: ['Bookings'],
-      summary: 'Create a booking — JWT always; API key required only when booking_via = whatsapp_to_crm',
+      summary: 'Create a booking — JWT or API key; API key required for whatsapp_to_crm via JWT path',
       description: [
         'Creates a new booking and auto-generates a human-readable `reference_id` (`DD-MM-YYYY-NNNNN`).',
         '',
         '**Auth rules:**',
-        '- `app`, `website`, `laptop`, `call` → JWT only',
-        '- `whatsapp_to_crm` → JWT **+ API key** (CRM agent action)',
+        '- API key only → full access, all booking_via values allowed',
+        '- JWT only → `app`, `website`, `laptop`, `call` allowed',
+        '- JWT + API key → `whatsapp_to_crm` allowed (CRM agent action)',
       ].join('\n'),
-      security: jwtOnly,
+      security: jwtOrKey,
       requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/CreateBookingDto' } } } },
       responses: {
         201: { description: 'Booking created' },
@@ -45,23 +48,24 @@ export const bookingPaths = {
   '/bookings/{id}': {
     get: {
       tags: ['Bookings'],
-      summary: 'Get booking by ID — JWT only',
-      security: jwtOnly,
+      summary: 'Get booking by ID — JWT or API key',
+      security: jwtOrKey,
       parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
       responses: { 200: { description: 'Booking found' }, 404: { description: 'Not found' } },
     },
     patch: {
       tags: ['Bookings'],
-      summary: 'Update booking — JWT always; API key required for operational fields',
+      summary: 'Update booking — JWT or API key; API key required for operational fields via JWT path',
       description: [
-        '**Field-level auth:**',
-        '- `booking_status` / `cancellation_reason` only → JWT only (user self-cancellation)',
+        '**Auth rules:**',
+        '- API key only → full access, all fields can be updated',
+        '- JWT only → `booking_status` / `cancellation_reason` only (user self-cancellation)',
         '  - `booking_status` can only be set to `cancelled_via_user` without API key',
-        '- Any other field (branch, user_phone, address, etc.) → JWT **+ API key** (CRM admin)',
+        '- JWT + API key → any field can be updated (CRM admin)',
         '',
         'Changing to a cancelled status automatically appends a `cancellation_log` entry.',
       ].join('\n'),
-      security: jwtOnly,
+      security: jwtOrKey,
       parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
       requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/UpdateBookingDto' } } } },
       responses: {
@@ -71,8 +75,8 @@ export const bookingPaths = {
     },
     delete: {
       tags: ['Bookings'],
-      summary: 'Hard-delete booking — JWT + API key (admin only)',
-      security: jwtAndKey,
+      summary: 'Hard-delete booking — JWT or API key',
+      security: jwtOrKey,
       parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string' } }],
       responses: { 200: { description: 'Booking deleted' }, 404: { description: 'Not found' } },
     },
@@ -99,6 +103,7 @@ export const bookingSchemas = {
       user_phone:          { type: 'string', example: '+919876543210' },
       address:             { type: 'string', example: '123 Main St, Jalandhar' },
       live_location_url:   { type: 'string', example: 'https://maps.google.com/?q=31.326,75.576' },
+      house_helper_name:   { type: 'string', example: 'Ramesh Kumar' },
       booking_via:                   { type: 'string', enum: ['app', 'website', 'laptop', 'whatsapp_to_crm', 'call'] },
       booking_status:                { type: 'string', enum: ['ongoing', 'completed', 'cancelled_via_user', 'cancelled_by_admin_crm'] },
       booking_created_date_and_time: { type: 'string', format: 'date-time', example: '2026-05-03T10:30:00.000Z', description: 'Custom booking date & time (ISO 8601). If not provided, defaults to document createdAt.' },
@@ -123,6 +128,7 @@ export const bookingSchemas = {
       user_phone:        { type: 'string', example: '+919876543210' },
       address:           { type: 'string', example: '123 Main St, Jalandhar' },
       live_location_url:             { type: 'string', example: 'https://maps.google.com/?q=31.326,75.576' },
+      house_helper_name:             { type: 'string', example: 'Ramesh Kumar', description: 'Name of the house helper assigned to this booking (optional)' },
       booking_via: {
         type: 'string',
         enum: ['app', 'website', 'laptop', 'whatsapp_to_crm', 'call'],
@@ -144,6 +150,7 @@ export const bookingSchemas = {
       user_phone:          { type: 'string' },
       address:             { type: 'string' },
       live_location_url:   { type: 'string' },
+      house_helper_name:   { type: 'string', example: 'Ramesh Kumar', description: 'Name of the house helper assigned (optional)' },
       booking_via:         { type: 'string', enum: ['app', 'website', 'laptop', 'whatsapp_to_crm', 'call'] },
       booking_status: {
         type: 'string',

@@ -26,7 +26,7 @@ export const swaggerSpec = {
   },
   servers: [
     { url: 'https://identity.zynkly.com/api/v1', description: 'Production server' },
-    { url: 'http://localhost:7000/api/v1',        description: 'Development server' },
+    { url: 'http://localhost:7001/api/v1',        description: 'Development server' },
   ],
   tags: [
     { name: 'Auth',      description: 'Login and profile' },
