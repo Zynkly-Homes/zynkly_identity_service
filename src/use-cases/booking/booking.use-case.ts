@@ -1,7 +1,7 @@
 import { IDataServices }      from '../../core/abstracts/data-service.abstract';
 import { CreateBookingDto }    from '../../core/dtos/booking/create-booking.dto';
 import { UpdateBookingDto }    from '../../core/dtos/booking/update-booking.dto';
-import { BookingStatus }       from '../../core/entities/booking.entity';
+import { BookingStatus, BookingVia, PaymentMethod, PaymentStatus } from '../../core/entities/booking.entity';
 import { AppError }            from '../../utils/app-error.util';
 import { ListQuery, parsePagination, buildPageResult } from '../../utils/pagination.util';
 import { Counter }             from '../../frameworks/mongo/model/counter.model';
@@ -115,10 +115,19 @@ export class BookingUseCase {
   async createBooking(dto: CreateBookingDto) {
     const reference_id = await generateReferenceId();
     return this.dataServices.bookings.create({
-      ...dto,
+      branch:            dto.branch            ?? 'N/A',
+      user_name:         dto.user_name         ?? 'N/A',
+      user_id:           dto.user_id           ?? 'N/A',
       user_phone:        dto.user_phone        ?? 'N/A',
+      address:           dto.address           ?? 'N/A',
       live_location_url: dto.live_location_url ?? 'N/A',
       house_helper_name: dto.house_helper_name ?? 'N/A',
+      booking_via:       dto.booking_via       ?? BookingVia.CALL,
+      booking_created_date_and_time: dto.booking_created_date_and_time,
+      package_name:      dto.package_name      ?? 'N/A',
+      payment_method:    dto.payment_method    ?? PaymentMethod.CASH,
+      payment_amount:    dto.payment_amount    ?? 0,
+      payment_status:    dto.payment_status    ?? PaymentStatus.PENDING,
       reference_id,
       booking_status:    BookingStatus.ONGOING,
       cancellation_log:  [],
