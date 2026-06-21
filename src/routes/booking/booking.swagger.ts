@@ -120,15 +120,15 @@ export const bookingSchemas = {
   },
   CreateBookingDto: {
     type: 'object',
-    required: ['branch', 'user_name', 'user_id', 'user_phone', 'address', 'booking_via', 'package_name', 'payment_method', 'payment_amount'],
+    required: ['branch', 'user_name', 'user_id', 'address', 'booking_via', 'package_name', 'payment_method', 'payment_amount'],
     properties: {
       branch:            { type: 'string', example: 'jalandhar' },
       user_name:         { type: 'string', example: 'Nikhil Sharma' },
       user_id:           { type: 'string', example: '664f1a2b3c4d5e6f7a8b9c0d' },
-      user_phone:        { type: 'string', example: '+919876543210' },
+      user_phone:        { type: 'string', example: '+919876543210', description: 'Optional — defaults to "N/A" when not provided' },
       address:           { type: 'string', example: '123 Main St, Jalandhar' },
-      live_location_url:             { type: 'string', example: 'https://maps.google.com/?q=31.326,75.576' },
-      house_helper_name:             { type: 'string', example: 'Ramesh Kumar', description: 'Name of the house helper assigned to this booking (optional)' },
+      live_location_url:             { type: 'string', example: 'https://maps.google.com/?q=31.326,75.576', description: 'Optional — defaults to "N/A" (not collected in booking flow)' },
+      house_helper_name:             { type: 'string', example: 'Ramesh Kumar', description: 'Optional — defaults to "N/A" (not collected in booking flow)' },
       booking_via: {
         type: 'string',
         enum: ['app', 'website', 'laptop', 'whatsapp_to_crm', 'call'],

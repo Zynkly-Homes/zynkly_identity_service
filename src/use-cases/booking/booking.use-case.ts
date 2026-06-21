@@ -116,10 +116,13 @@ export class BookingUseCase {
     const reference_id = await generateReferenceId();
     return this.dataServices.bookings.create({
       ...dto,
+      user_phone:        dto.user_phone        ?? 'N/A',
+      live_location_url: dto.live_location_url ?? 'N/A',
+      house_helper_name: dto.house_helper_name ?? 'N/A',
       reference_id,
-      booking_status: BookingStatus.ONGOING,
-      cancellation_log: [],
-      is_active: true,
+      booking_status:    BookingStatus.ONGOING,
+      cancellation_log:  [],
+      is_active:         true,
     });
   }
 
