@@ -41,6 +41,7 @@ export interface IBooking {
   address:                       string;
   live_location_url?:            string;
   house_helper_name?:            string;
+  cleaner_id?:                   string;
   booking_via:                   BookingVia;
   booking_status:                BookingStatus;
   booking_created_date_and_time?: Date;
@@ -51,6 +52,7 @@ export interface IBooking {
   payment_amount:                number;
   payment_status:                PaymentStatus;
   is_active:                     boolean;
+  is_delete:                     boolean;
 }
 
 export interface IBookingDocument extends IBooking, Document {}

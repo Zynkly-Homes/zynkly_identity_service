@@ -9,6 +9,7 @@ export interface UpdateBookingDto {
   address?:                       string;
   live_location_url?:             string;
   house_helper_name?:             string;
+  cleaner_id?:                    string;
   booking_via?:                   BookingVia;
   booking_status?:                BookingStatus;
   booking_created_date_and_time?: Date;
@@ -18,6 +19,7 @@ export interface UpdateBookingDto {
   payment_amount?:                number;
   payment_status?:                PaymentStatus;
   is_active?:                     boolean;
+  is_delete?:                     boolean;
 }
 
 export const updateBookingSchema = Joi.object<UpdateBookingDto>({
@@ -28,6 +30,7 @@ export const updateBookingSchema = Joi.object<UpdateBookingDto>({
   address:                        Joi.string().allow('', null),
   live_location_url:              Joi.string().uri().allow('', null),
   house_helper_name:              Joi.string().allow('', null),
+  cleaner_id:                     Joi.string().allow('', null),
   booking_via:                    Joi.string().valid(...Object.values(BookingVia)).allow('', null),
   booking_status:                 Joi.string().valid(...Object.values(BookingStatus)).allow('', null),
   booking_created_date_and_time:  Joi.date().iso().allow('', null),
@@ -37,4 +40,5 @@ export const updateBookingSchema = Joi.object<UpdateBookingDto>({
   payment_amount:                 Joi.number().min(0).allow(null),
   payment_status:                 Joi.string().valid(...Object.values(PaymentStatus)).allow('', null),
   is_active:                      Joi.boolean().allow(null),
+  is_delete:                      Joi.boolean().allow(null),
 }).min(1);

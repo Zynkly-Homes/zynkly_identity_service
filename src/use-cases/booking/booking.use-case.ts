@@ -41,6 +41,59 @@ async function generateReferenceId(): Promise<string> {
   return `${dd}-${mm}-${yyyy}-${formatCounter(counter!.seq)}`;
 }
 
+const OBJECT_ID_RE = /^[0-9a-fA-F]{24}$/;
+
+/**
+ * Joins each booking with its assigned cleaner (booking.cleaner_id → CleanerBooking._id)
+ * and flattens cleaner_name / mobile_number onto the top level of the booking document.
+ * cleaner_id is stored as a plain string, so $convert (not localField/foreignField) is
+ * used to safely cast it to ObjectId — non-ObjectId values (e.g. the "N/A" default)
+ * simply fail to match rather than erroring, preserving LEFT JOIN semantics.
+ */
+function buildCleanerLookupStages(): object[] {
+  return [
+    {
+      $lookup: {
+        from: 'cleanerbookings',
+        let:  { cleanerId: '$cleaner_id' },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $eq: [
+                  '$_id',
+                  { $convert: { input: '$$cleanerId', to: 'objectId', onError: null, onNull: null } },
+                ],
+              },
+            },
+          },
+          { $project: { cleaner_name: 1, mobile_number: 1 } },
+        ],
+        as: 'cleaner',
+      },
+    },
+    { $unwind: { path: '$cleaner', preserveNullAndEmptyArrays: true } },
+    {
+      $addFields: {
+        cleaner_name:          '$cleaner.cleaner_name',
+        cleaner_mobile_number: '$cleaner.mobile_number',
+      },
+    },
+    { $project: { cleaner: 0 } },
+  ];
+}
+
+/** Builds an optional $sort stage from the `sort_by` query param. */
+function buildBookingSortStage(sortBy: string | undefined): object[] {
+  switch (sortBy) {
+    case 'latest_updated':  return [{ $sort: { updatedAt: -1 } }];
+    case 'oldest_updated':  return [{ $sort: { updatedAt: 1 } }];
+    case 'latest_created':  return [{ $sort: { createdAt: -1 } }];
+    case 'oldest_created':  return [{ $sort: { createdAt: 1 } }];
+    default:                return [];
+  }
+}
+
 // ─── Use-case ────────────────────────────────────────────────────────────────
 
 export class BookingUseCase {
@@ -55,9 +108,20 @@ export class BookingUseCase {
    *   booking_status    — exact enum value
    *   booking_via       — exact enum value
    *   branch            — exact match
+   *   payment_status    — exact enum value
+   *   payment_method    — exact enum value
+   *   cleaner_id        — exact match (assigned cleaner's CleanerBooking _id)
+   *   user_id           — exact match
+   *   reference_id      — exact match
+   *   package_name      — exact match
    *   date_from         — ISO date; lower bound on createdAt
    *   date_to           — ISO date; upper bound on createdAt
+   *   updated_from      — ISO date; lower bound on updatedAt
+   *   updated_to        — ISO date; upper bound on updatedAt
    *   is_active         — "true" | "false" (default: true)
+   *   is_delete         — "true" | "false" (default: false)
+   *   sort_by           — "latest_updated" | "oldest_updated" | "latest_created" | "oldest_created"
+   *                       (default: unsorted / natural insertion order)
    */
   async getAllBookings(query: ListQuery = {}) {
     const { pageNum, limitNum, hasPagination } = parsePagination(query);
@@ -69,9 +133,21 @@ export class BookingUseCase {
       ? query['is_active'] === 'true'
       : true;
 
-    if (query['booking_status']) match['booking_status'] = query['booking_status'];
-    if (query['booking_via'])    match['booking_via']    = query['booking_via'];
-    if (query['branch'])         match['branch']         = query['branch'];
+    // Exclude soft-deleted bookings unless caller explicitly asks for them.
+    // Use $ne rather than strict `false` so documents predating the is_delete
+    // field (which have no is_delete key stored at all) are still included —
+    // aggregate() reads raw Mongo docs and does not apply Mongoose schema defaults.
+    match['is_delete'] = query['is_delete'] === 'true' ? true : { $ne: true };
+
+    if (query['booking_status'])   match['booking_status']   = query['booking_status'];
+    if (query['booking_via'])      match['booking_via']      = query['booking_via'];
+    if (query['branch'])           match['branch']           = query['branch'];
+    if (query['payment_status'])   match['payment_status']   = query['payment_status'];
+    if (query['payment_method'])   match['payment_method']   = query['payment_method'];
+    if (query['cleaner_id'])       match['cleaner_id']       = query['cleaner_id'];
+    if (query['user_id'])          match['user_id']          = query['user_id'];
+    if (query['reference_id'])     match['reference_id']     = query['reference_id'];
+    if (query['package_name'])     match['package_name']     = query['package_name'];
 
     // Date range on createdAt
     if (query['date_from'] || query['date_to']) {
@@ -85,6 +161,18 @@ export class BookingUseCase {
       match['createdAt'] = range;
     }
 
+    // Date range on updatedAt — filter bookings by when they were last modified
+    if (query['updated_from'] || query['updated_to']) {
+      const range: Record<string, Date> = {};
+      if (query['updated_from']) range['$gte'] = new Date(query['updated_from']);
+      if (query['updated_to']) {
+        const to = new Date(query['updated_to']);
+        to.setHours(23, 59, 59, 999);  // include full day
+        range['$lte'] = to;
+      }
+      match['updatedAt'] = range;
+    }
+
     // Text search across key identifier fields
     if (query['search']) {
       const regex = { $regex: query['search'], $options: 'i' };
@@ -96,7 +184,8 @@ export class BookingUseCase {
       ];
     }
 
-    const pipeline = [{ $match: match }];
+    const sortStage = buildBookingSortStage(query['sort_by']);
+    const pipeline  = [{ $match: match }, ...buildCleanerLookupStages(), ...sortStage];
 
     if (hasPagination) {
       return this.dataServices.bookings.aggregateWithPagination(pipeline, pageNum, limitNum);
@@ -108,8 +197,16 @@ export class BookingUseCase {
 
   async getBookingById(id: string) {
     const booking = await this.dataServices.bookings.get(id);
-    if (!booking) throw new AppError('Booking not found', 404);
-    return booking;
+    if (!booking || booking.is_delete) throw new AppError('Booking not found', 404);
+
+    const cleaner = booking.cleaner_id && OBJECT_ID_RE.test(booking.cleaner_id)
+      ? await this.dataServices.cleanerBookings.get(booking.cleaner_id)
+      : null;
+    return {
+      ...(booking as unknown as Record<string, unknown>),
+      cleaner_name:          cleaner?.cleaner_name ?? null,
+      cleaner_mobile_number: cleaner?.mobile_number ?? null,
+    };
   }
 
   async createBooking(dto: CreateBookingDto) {
@@ -122,6 +219,7 @@ export class BookingUseCase {
       address:           dto.address           || 'N/A',
       live_location_url: dto.live_location_url || 'N/A',
       house_helper_name: dto.house_helper_name || 'N/A',
+      cleaner_id:        dto.cleaner_id        || 'N/A',
       booking_via:       dto.booking_via       || BookingVia.CALL,
       booking_created_date_and_time: dto.booking_created_date_and_time,
       package_name:      dto.package_name      || 'N/A',
@@ -132,6 +230,7 @@ export class BookingUseCase {
       booking_status:    BookingStatus.ONGOING,
       cancellation_log:  [],
       is_active:         true,
+      is_delete:         false,
     });
   }
 
@@ -173,10 +272,10 @@ export class BookingUseCase {
     // Copy all allowed fields into the update
     const fieldKeys: (keyof UpdateBookingDto)[] = [
       'branch', 'user_name', 'user_id', 'user_phone',
-      'address', 'live_location_url', 'house_helper_name', 'booking_via',
+      'address', 'live_location_url', 'house_helper_name', 'cleaner_id', 'booking_via',
       'booking_status', 'cancellation_reason',
       'package_name', 'payment_method', 'payment_amount', 'payment_status',
-      'is_active',
+      'is_active', 'is_delete',
     ];
     for (const key of fieldKeys) {
       if (dto[key] !== undefined) update[key] = dto[key];
@@ -203,7 +302,7 @@ export class BookingUseCase {
 
   async deleteBooking(id: string) {
     const booking = await this.dataServices.bookings.get(id);
-    if (!booking) throw new AppError('Booking not found', 404);
-    await this.dataServices.bookings.delete(id);
+    if (!booking || booking.is_delete) throw new AppError('Booking not found', 404);
+    await this.dataServices.bookings.update(id, { is_delete: true });
   }
 }

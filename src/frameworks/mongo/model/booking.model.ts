@@ -16,6 +16,7 @@ const BookingSchema = new Schema<IBookingDocument>({
   address:             { type: String },
   live_location_url:            { type: String },
   house_helper_name:            { type: String },
+  cleaner_id:                   { type: String },
   booking_via:                  { type: String, enum: Object.values(BookingVia) },
   booking_created_date_and_time: { type: Date },
   booking_status:      { type: String, enum: Object.values(BookingStatus), default: BookingStatus.ONGOING },
@@ -26,6 +27,7 @@ const BookingSchema = new Schema<IBookingDocument>({
   payment_amount:      { type: Number, min: 0 },
   payment_status:      { type: String, enum: Object.values(PaymentStatus), default: PaymentStatus.PENDING },
   is_active:           { type: Boolean, default: true },
+  is_delete:           { type: Boolean, default: false },
 }, { timestamps: true });
 
 export const Booking = mongoose.model<IBookingDocument>('Booking', BookingSchema);

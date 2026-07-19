@@ -6,6 +6,8 @@ import { userPaths,    userSchemas }     from '../routes/user/user.swagger';
 import { authPaths,    authSchemas }     from '../routes/auth/auth.swagger';
 import { apiKeyPaths,  apiKeySchemas }   from '../routes/api-key/api-key.swagger';
 import { bookingPaths, bookingSchemas }  from '../routes/booking/booking.swagger';
+import { cleanerBookingPaths, cleanerBookingSchemas } from '../routes/cleaner-booking/cleaner-booking.swagger';
+import { bookingActivityLogPaths, bookingActivityLogSchemas } from '../routes/booking-activity-log/booking-activity-log.swagger';
 
 export const swaggerSpec = {
   openapi: '3.0.0',
@@ -37,6 +39,8 @@ export const swaggerSpec = {
     { name: 'Students',  description: 'Student management' },
     { name: 'Marks',     description: 'Subject-wise marks with student info via $lookup' },
     { name: 'Bookings',  description: 'Booking CRUD — auto-generated reference_id, conditional auth per route/field' },
+    { name: 'Cleaner Bookings', description: 'Cleaner booking CRUD — auto-generated reference_id, conditional auth per route/field, payment history array' },
+    { name: 'Booking Activity Logs', description: 'Read-only audit trail of GET/POST/PATCH calls made to the booking module, with user info via $lookup' },
   ],
   paths: {
     ...authPaths,
@@ -47,6 +51,8 @@ export const swaggerSpec = {
     ...studentPaths,
     ...marksPaths,
     ...bookingPaths,
+    ...cleanerBookingPaths,
+    ...bookingActivityLogPaths,
   },
   components: {
     securitySchemes: {
@@ -84,6 +90,8 @@ export const swaggerSpec = {
       ...studentSchemas,
       ...marksSchemas,
       ...bookingSchemas,
+      ...cleanerBookingSchemas,
+      ...bookingActivityLogSchemas,
       ApiError: {
         type: 'object',
         properties: {

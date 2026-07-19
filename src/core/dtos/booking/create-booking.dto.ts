@@ -9,6 +9,7 @@ export interface CreateBookingDto {
   address?:                       string;
   live_location_url?:             string;
   house_helper_name?:             string;
+  cleaner_id?:                    string;
   booking_via?:                   BookingVia;
   booking_created_date_and_time?: Date;
   package_name?:                  string;
@@ -25,6 +26,7 @@ export const createBookingSchema = Joi.object<CreateBookingDto>({
   address:                        Joi.string().allow('', null).optional(),
   live_location_url:              Joi.string().uri().allow('', null).optional(),
   house_helper_name:              Joi.string().allow('', null).optional(),
+  cleaner_id:                     Joi.string().allow('', null).optional(),
   booking_via:                    Joi.string().valid(...Object.values(BookingVia)).allow('', null).optional(),
   booking_created_date_and_time:  Joi.date().iso().allow('', null).optional(),
   package_name:                   Joi.string().allow('', null).optional(),

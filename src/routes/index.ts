@@ -7,16 +7,20 @@ import userRoutes     from './user';
 import authRoutes     from './auth';
 import apiKeyRoutes   from './api-key';
 import bookingRoutes  from './booking/booking.routes';
+import cleanerBookingRoutes from './cleaner-booking/cleaner-booking.routes';
+import bookingActivityLogRoutes from './booking-activity-log/booking-activity-log.routes';
 
 const router = Router();
 
-router.use('/students',  studentRoutes);
-router.use('/marks',     marksRoutes);
-router.use('/modules',   moduleRoutes);
-router.use('/roles',     roleRoutes);
-router.use('/users',     userRoutes);
-router.use('/auth',      authRoutes);
-router.use('/api-keys',  apiKeyRoutes);
-router.use('/bookings',  bookingRoutes);
+router.use('/students',              studentRoutes);
+router.use('/marks',                 marksRoutes);
+router.use('/modules',               moduleRoutes);
+router.use('/roles',                 roleRoutes);
+router.use('/users',                 userRoutes);
+router.use('/auth',                  authRoutes);
+router.use('/api-keys',              apiKeyRoutes);
+router.use('/bookings',              bookingRoutes);
+router.use('/cleaner-bookings',      cleanerBookingRoutes);
+router.use('/booking-activity-logs', bookingActivityLogRoutes);
 
 export default router;

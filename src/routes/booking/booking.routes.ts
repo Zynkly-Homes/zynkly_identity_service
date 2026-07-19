@@ -1,6 +1,7 @@
 import { Router }         from 'express';
 import { csrfMiddleware } from '../../middlewares/csrf.middleware';
 import { bookingAuth }    from '../../middlewares/booking-auth.middleware';
+import { bookingActivityLogger } from '../../middlewares/booking-activity-logger.middleware';
 import {
   conditionalBookingCreateApiKey,
   conditionalBookingPatchApiKey,
@@ -17,12 +18,14 @@ const router = Router();
 
 // GET  /bookings        → JWT+permission(view)  OR  API key
 router.get('/',
+  bookingActivityLogger,
   bookingAuth('booking_management', 'view'),
   getAllBookings,
 );
 
 // GET  /bookings/:id    → JWT+permission(view)  OR  API key
 router.get('/:id',
+  bookingActivityLogger,
   bookingAuth('booking_management', 'view'),
   getBookingById,
 );
@@ -30,6 +33,7 @@ router.get('/:id',
 // POST /bookings        → JWT+CSRF+permission(create) OR API key; then conditional API key for whatsapp_to_crm
 // csrfMiddleware skips automatically when req.sessionCsrfToken is absent (API-key-only path)
 router.post('/',
+  bookingActivityLogger,
   bookingAuth('booking_management', 'create'),
   csrfMiddleware,
   conditionalBookingCreateApiKey,
@@ -38,6 +42,7 @@ router.post('/',
 
 // PATCH /bookings/:id   → JWT+CSRF+permission(edit) OR API key; then conditional API key for operational fields
 router.patch('/:id',
+  bookingActivityLogger,
   bookingAuth('booking_management', 'edit'),
   csrfMiddleware,
   conditionalBookingPatchApiKey,
